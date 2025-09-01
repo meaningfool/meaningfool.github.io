@@ -1,2 +1,2 @@
-# meaningful.github.io
-meaningful.net website
+# meaningfool.github.io
+meaningfool.net website
