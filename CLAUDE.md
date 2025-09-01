@@ -138,10 +138,20 @@ The site currently displays a welcome page with:
    - Run `bun build` to create optimized production files
    - Run `bun preview` to test the production build locally
 
-3. **Deployment**
-   - As a `.github.io` repository, this is intended for GitHub Pages
-   - Production builds should be committed to the appropriate branch
-   - GitHub Pages will serve the static files
+3. **GitHub Pages Deployment**
+   - **Automatic Deployment**: This repository uses GitHub Actions for automatic deployment
+   - Every push to the `main` branch triggers a deployment workflow
+   - The workflow uses Bun to install dependencies and build the site
+   - Built files are automatically deployed to GitHub Pages
+   
+   **To enable GitHub Pages:**
+   1. Go to Settings → Pages in your GitHub repository
+   2. Under "Source", select "GitHub Actions"
+   3. The site will be available at https://meaningfool.github.io/
+   
+   **Manual Deployment:**
+   - You can also trigger deployment manually from the Actions tab
+   - The workflow file is located at `.github/workflows/deploy.yml`
 
 ### Next Steps for Development
 
@@ -162,8 +172,8 @@ The site currently displays a welcome page with:
    - Import and use them in pages
 
 5. **Configure for GitHub Pages**
-   - May need to update `astro.config.mjs` with site and base settings
-   - Set up GitHub Actions for automatic deployment
+   - ✅ `astro.config.mjs` is already configured with correct site and base settings
+   - ✅ GitHub Actions workflow is set up for automatic deployment
 
 ### Technology Stack
 
