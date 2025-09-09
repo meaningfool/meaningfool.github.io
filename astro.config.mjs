@@ -5,5 +5,10 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
     site: 'https://meaningfool.github.io',
     base: '/',
-    output: 'static'
-  });
+    output: 'static',
+    vite: {
+        resolve: {
+            preserveSymlinks: true
+        }
+    }
+});
