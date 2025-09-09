@@ -1,6 +1,6 @@
 ---
 import type { GetStaticPaths } from 'astro';
-import { getCollection } from 'astro:content';
+import { getCollection, type CollectionEntry } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 
@@ -12,7 +12,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
   }));
 }
 
-const article = Astro.props;
+const article = Astro.props as CollectionEntry<'articles'>;
 const { Content } = await article.render();
 ---
 
@@ -41,17 +41,7 @@ const { Content } = await article.render();
   }
 
   h1 {
-    color: var(--text);
-    font-weight: var(--font-weight-medium);
-    margin: 0 0 1rem 0;
-    text-indent: -2ch;
-    padding-left: 2ch;
-  }
-
-  h1::before {
-    content: "# ";
-    color: var(--accent);
-    font-weight: 700;
+    margin-bottom: 1rem;
   }
 
   .article-date {
@@ -63,7 +53,6 @@ const { Content } = await article.render();
 
   .article-content {
     padding: 1.5rem 0 3rem 0;
-    line-height: var(--line-height-body);
   }
 
   .article-content :global(h1) {

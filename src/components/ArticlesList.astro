@@ -1,0 +1,70 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+export interface Props {
+	articles: CollectionEntry<'articles'>[];
+}
+
+const { articles } = Astro.props;
+---
+
+<ul class="articles-list">
+	{articles.map(article => (
+		<li>
+			<a href={`/articles/${article.slug}`} class="post-title">{article.data.title}</a>
+			<span class="post-meta">{article.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+		</li>
+	))}
+</ul>
+
+<style>
+	.articles-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.articles-list li {
+		margin-bottom: 0.15rem;
+		padding-left: 1rem;
+		text-indent: -1rem;
+	}
+
+	.articles-list li::before {
+		content: "* ";
+	}
+
+	.articles-list .post-title {
+		color: var(--accent);
+		text-decoration: none;
+	}
+
+	.articles-list .post-title:hover {
+		color: var(--accent-hover);
+		text-decoration: underline;
+	}
+
+	.post-meta {
+		color: var(--muted);
+		font-size: 0.9rem;
+		margin-left: 0.5rem;
+	}
+
+	@media (max-width: 768px) {
+		.articles-list li {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: baseline;
+		}
+
+		.articles-list li::before {
+			flex-shrink: 0;
+		}
+
+		.post-meta {
+			width: 100%;
+			margin-left: 1rem;
+			font-size: 0.85rem;
+		}
+	}
+</style>

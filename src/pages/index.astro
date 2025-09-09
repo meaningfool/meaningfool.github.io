@@ -1,9 +1,10 @@
 ---
 import Header from '../components/Header.astro';
 import Layout from '../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
+import ArticlesList from '../components/ArticlesList.astro';
+import { getCollection, type CollectionEntry } from 'astro:content';
 
-const articles = await getCollection('articles', ({ data }) => {
+const articles: CollectionEntry<'articles'>[] = await getCollection('articles', ({ data }) => {
 	return !data.draft;
 });
 
@@ -15,105 +16,14 @@ const sortedArticles = articles.sort((a, b) => b.data.date.getTime() - a.data.da
 	<Header />
 	<main id="main" class="container">
 		<section id="about">
-			<p>Engineer-turned product manager. Hands-on builder who likes ambitious bets and exploring complexity in enterprise/B2B systems. I tinker with Python and GenAI (OpenAI API, LangChain, LlamaIndex) and write about product, data, and tooling.</p>
+			<p>Customer-facing guy turned B2B Product Manager, and now turning into a builder.</p>
+			<p>I think and write about product management and the impact of AI. I tinker Claude Code to deliver personal projects.</p>
 		</section>
 
 		<section id="articles" aria-labelledby="articles-title">
 			<h1 id="articles-title" class="section-title">Articles</h1>
-			<ul class="articles-list">
-				{sortedArticles.map(article => (
-					<li>
-						<a href={`/articles/${article.slug}`} class="post-title">{article.data.title}</a>
-						<span class="post-meta">{article.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-					</li>
-				))}
-			</ul>
+			<ArticlesList articles={sortedArticles} />
 		</section>
 	</main>
 </Layout>
 
-<style>
-	#about {
-		padding: 2rem 0;
-		margin-bottom: 1.5rem;
-	}
-
-	#about p {
-		font-size: var(--font-size-body);
-		line-height: var(--line-height-body);
-		color: var(--text);
-		margin: 0;
-	}
-
-	#articles {
-		padding-bottom: 2rem;
-	}
-
-	.section-title::before {
-		content: "# ";
-		color: var(--accent);
-		font-weight: 700;
-	}
-
-	.section-title {
-		color: var(--text);
-		font-weight: var(--font-weight-medium);
-		margin-bottom: 1rem;
-	}
-
-	.articles-list {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-
-	.articles-list li {
-		margin-bottom: 0.15rem;
-		line-height: 1.4;
-		padding-left: 1rem;
-		text-indent: -1rem;
-	}
-
-	.articles-list li::before {
-		content: "* ";
-		color: var(--muted);
-	}
-
-	.articles-list .post-title {
-		color: var(--accent);
-		text-decoration: underline;
-	}
-
-	.articles-list .post-title:hover {
-		color: var(--accent-hover);
-		text-decoration: none;
-	}
-
-	.post-meta {
-		color: var(--muted);
-		font-size: 0.9rem;
-		margin-left: 0.5rem;
-	}
-
-	@media (max-width: 768px) {
-		#about {
-			padding: 1.5rem 0;
-		}
-
-		.articles-list li {
-			display: flex;
-			flex-wrap: wrap;
-			align-items: baseline;
-		}
-
-		.articles-list li::before {
-			flex-shrink: 0;
-		}
-
-		.post-meta {
-			width: 100%;
-			margin-left: 1rem;
-			font-size: 0.85rem;
-		}
-	}
-</style>
