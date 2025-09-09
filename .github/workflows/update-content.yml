@@ -1,0 +1,26 @@
+name: Update Content Submodule
+
+on:
+  repository_dispatch:
+    types: [content-updated]
+  workflow_dispatch:
+
+jobs:
+  update-content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update submodule
+        run: |
+          git submodule update --remote src/content/writing
+          git add src/content/writing
+          if git diff --cached --quiet; then
+            echo "No content changes"
+          else
+            git commit -m "Auto-update content submodule"
+            git push
+          fi
