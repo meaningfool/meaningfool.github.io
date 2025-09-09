@@ -1,68 +1,30 @@
 ---
 import Header from '../components/Header.astro';
 import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
 
-const articles = [
-	{
-		title: "Outcome ou Output? 1 question et 2 conseils pour les identifier et les rédiger correctement",
-		date: "2023-06-16",
-		slug: "outcome-ou-output",
-		tags: ["product", "management"]
-	},
-	{
-		title: "Designers vs Développeurs",
-		date: "2023-05-23",
-		slug: "designers-vs-developpeurs",
-		tags: ["collaboration", "team"]
-	},
-	{
-		title: "Qu'est-ce qu'une bonne stratégie ?",
-		date: "2023-05-30",
-		slug: "bonne-strategie",
-		tags: ["strategy", "product"]
-	},
-	{
-		title: "Ne demandez plus \"pourquoi ?\"",
-		date: "2023-06-16",
-		slug: "ne-demandez-plus-pourquoi",
-		tags: ["communication", "leadership"]
-	},
-	{
-		title: "Utilisation du Domain-Driven Design",
-		date: "2023-06-14",
-		slug: "domain-driven-design",
-		tags: ["engineering", "architecture"]
-	},
-	{
-		title: "Lean on solutions",
-		date: "2023-06-26",
-		slug: "lean-on-solutions",
-		tags: ["methodology", "product"]
-	},
-	{
-		title: "Le jour où j'ai arrêté d'utiliser des frameworks de priorisation",
-		date: "2023-07-19",
-		slug: "frameworks-priorisation",
-		tags: ["product", "methodology"]
-	}
-];
+const articles = await getCollection('articles', ({ data }) => {
+	return !data.draft;
+});
+
+// Sort articles by date (most recent first)
+const sortedArticles = articles.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 ---
 
 <Layout>
 	<Header />
-	<main class="container">
-		<section class="intro">
+	<main id="main" class="container">
+		<section id="about">
 			<p>Engineer-turned product manager. Hands-on builder who likes ambitious bets and exploring complexity in enterprise/B2B systems. I tinker with Python and GenAI (OpenAI API, LangChain, LlamaIndex) and write about product, data, and tooling.</p>
 		</section>
 
-		<section class="articles">
-			<h2># Articles</h2>
-			<ul>
-				{articles.map(article => (
+		<section id="articles" aria-labelledby="articles-title">
+			<h1 id="articles-title" class="section-title">Articles</h1>
+			<ul class="articles-list">
+				{sortedArticles.map(article => (
 					<li>
-						<span class="bullet">*</span>
-						<a href={`/${article.slug}`} class="article-link">{article.title}</a>
-						<span class="date">{article.date}</span>
+						<a href={`/articles/${article.slug}`} class="post-title">{article.data.title}</a>
+						<span class="post-meta">{article.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
 					</li>
 				))}
 			</ul>
@@ -71,84 +33,84 @@ const articles = [
 </Layout>
 
 <style>
-	.container {
-		max-width: 800px;
-		margin: 0 auto;
-		padding: 0 1rem;
-		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
-	}
-
-	.intro {
+	#about {
 		padding: 2rem 0;
+		margin-bottom: 1.5rem;
 	}
 
-	.intro p {
-		font-size: 1rem;
-		line-height: 1.6;
-		color: #374151;
+	#about p {
+		font-size: var(--font-size-body);
+		line-height: var(--line-height-body);
+		color: var(--text);
 		margin: 0;
 	}
 
-	.articles {
+	#articles {
 		padding-bottom: 2rem;
 	}
 
-	.articles h2 {
-		font-size: 1.25rem;
-		color: #f97316;
-		font-weight: normal;
-		margin: 0 0 1rem 0;
+	.section-title::before {
+		content: "# ";
+		color: var(--accent);
+		font-weight: 700;
 	}
 
-	.articles ul {
+	.section-title {
+		color: var(--text);
+		font-weight: var(--font-weight-medium);
+		margin-bottom: 1rem;
+	}
+
+	.articles-list {
 		list-style: none;
 		padding: 0;
 		margin: 0;
 	}
 
-	.articles li {
-		display: flex;
-		align-items: baseline;
-		gap: 0.5rem;
-		margin-bottom: 0.5rem;
+	.articles-list li {
+		margin-bottom: 0.15rem;
 		line-height: 1.4;
+		padding-left: 1rem;
+		text-indent: -1rem;
 	}
 
-	.bullet {
-		color: #374151;
-		flex-shrink: 0;
+	.articles-list li::before {
+		content: "* ";
+		color: var(--muted);
 	}
 
-	.article-link {
-		color: #f97316;
+	.articles-list .post-title {
+		color: var(--accent);
 		text-decoration: underline;
-		flex-grow: 1;
 	}
 
-	.article-link:hover {
+	.articles-list .post-title:hover {
+		color: var(--accent-hover);
 		text-decoration: none;
 	}
 
-	.date {
-		color: #6b7280;
+	.post-meta {
+		color: var(--muted);
 		font-size: 0.9rem;
-		flex-shrink: 0;
+		margin-left: 0.5rem;
 	}
 
 	@media (max-width: 768px) {
-		.container {
-			padding: 0 1rem;
-		}
-
-		.intro {
+		#about {
 			padding: 1.5rem 0;
 		}
 
-		.articles li {
+		.articles-list li {
+			display: flex;
 			flex-wrap: wrap;
+			align-items: baseline;
 		}
 
-		.date {
+		.articles-list li::before {
+			flex-shrink: 0;
+		}
+
+		.post-meta {
 			width: 100%;
 			margin-left: 1rem;
 			font-size: 0.85rem;

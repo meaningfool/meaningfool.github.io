@@ -1,0 +1,95 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('articles');
+  return articles.map((article) => ({
+    params: { slug: article.slug },
+    props: article,
+  }));
+}
+
+const article = Astro.props;
+const { Content } = await article.render();
+---
+
+<Layout>
+  <Header />
+  <main id="main" class="container">
+    <article>
+      <header class="article-header">
+        <h1>{article.data.title}</h1>
+        <time class="article-date">{article.data.date.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })}</time>
+      </header>
+      <div class="article-content">
+        <Content />
+      </div>
+    </article>
+  </main>
+</Layout>
+
+<style>
+  .article-header {
+    margin: 2rem 0;
+  }
+
+  h1 {
+    color: var(--text);
+    font-weight: var(--font-weight-medium);
+    margin: 0 0 1rem 0;
+    text-indent: -2ch;
+    padding-left: 2ch;
+  }
+
+  h1::before {
+    content: "# ";
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .article-date {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+    display: block;
+  }
+
+  .article-content {
+    padding: 1.5rem 0 3rem 0;
+    line-height: var(--line-height-body);
+  }
+
+  .article-content :global(h1) {
+    display: none;
+  }
+
+  .article-content :global(h2) {
+    margin: 2rem 0 1rem 0;
+    font-size: 1.25rem;
+  }
+
+  .article-content :global(h3) {
+    margin: 1.5rem 0 0.75rem 0;
+    font-size: 1.125rem;
+  }
+
+  .article-content :global(p) {
+    margin: 0 0 1.25rem 0;
+  }
+
+  @media (max-width: 768px) {
+    .article-header {
+      margin: 1.5rem 0;
+    }
+
+    .article-content {
+      padding: 1rem 0 2rem 0;
+    }
+  }
+</style>

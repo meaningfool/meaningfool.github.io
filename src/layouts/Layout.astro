@@ -5,18 +5,121 @@
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500&display=swap" rel="stylesheet">
 		<title>meaningfool</title>
 	</head>
 	<body>
+		<a class="skip-link" href="#main">Skip to main content</a>
 		<slot />
+		<footer class="container" style="margin-top: 3rem; padding-block: 1.5rem; color: var(--muted); border-top: 1px solid var(--border); text-align: center;">
+			<a href="https://github.com/meaningfool" style="color: var(--muted); text-decoration: none; margin-right: 1rem;">GitHub</a>
+			<a href="https://twitter.com/meaningfool" style="color: var(--muted); text-decoration: none;">Twitter</a>
+		</footer>
 	</body>
 </html>
 
-<style>
+<style is:global>
+	/* Font loaded via Google Fonts */
+
+	/* CSS Custom Properties */
+	:root {
+		/* Color system */
+		--accent-h: 25;
+		--accent-s: 100%;
+		--accent-l: 56%;
+		--accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+		--accent-hover: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) - 8%));
+		--bg: #ffffff;
+		--text: #000000;
+		--muted: #6b7280;
+		--border: #e6e8eb;
+
+		/* Layout system */
+		--measure: 70ch;
+		--container-pad: 1.5rem;
+
+		/* Typography scale */
+		--font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+		--font-size-body: 1rem;
+		--line-height-body: 1.75;
+		--font-weight-normal: 400;
+		--font-weight-medium: 500;
+		--letter-spacing-tight: -0.015em;
+	}
+
+	/* Base styles */
 	html,
 	body {
 		margin: 0;
 		width: 100%;
 		height: 100%;
+		font-family: var(--font-mono);
+		font-size: var(--font-size-body);
+		line-height: var(--line-height-body);
+		font-weight: var(--font-weight-normal);
+		color: var(--text);
+		background-color: var(--bg);
+	}
+
+	/* Global utilities */
+	.container {
+		width: min(var(--measure), 100%);
+		margin-inline: auto;
+		padding-inline: var(--container-pad);
+	}
+
+	/* Skip link for accessibility */
+	.skip-link {
+		position: absolute;
+		left: -9999px;
+		z-index: 1000;
+		padding: 1rem;
+		background: var(--bg);
+		color: var(--text);
+		text-decoration: none;
+		border: 2px solid var(--accent);
+	}
+	
+	.skip-link:focus {
+		left: 1rem;
+		top: 1rem;
+	}
+
+	/* Focus states */
+	a:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	/* Typography base */
+	h1, h2, h3, h4, h5, h6 {
+		font-weight: var(--font-weight-medium);
+		line-height: 1.25;
+		letter-spacing: var(--letter-spacing-tight);
+		margin: 0 0 0.5rem 0;
+	}
+
+	h1 {
+		font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+	}
+	
+	h2 {
+		font-size: 1.25rem;
+	}
+
+	p {
+		margin: 0 0 1rem 0;
+	}
+
+	a {
+		color: var(--accent);
+		text-decoration: none;
+	}
+
+	a:hover {
+		color: var(--accent-hover);
+		text-decoration: underline;
 	}
 </style>

@@ -1,55 +1,55 @@
 <header>
 	<div class="container">
-		<h1><a href="/">meaningfool</a></h1>
+		<div class="site-title"><a href="/">meaningfool</a></div>
 		<nav>
 			<a href="/about">About</a>
 		</nav>
 	</div>
 </header>
+<div class="header-separator container"></div>
 
 <style>
 	header {
-		padding: 1rem 0;
-		border-bottom: 1px solid #e5e7eb;
+		padding: 1.25rem 0;
+	}
+
+	.header-separator {
+		border-bottom: 1px solid var(--border);
 	}
 
 	.container {
-		max-width: 800px;
-		margin: 0 auto;
-		padding: 0 1rem;
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: baseline;
 	}
 
-	h1 {
+	.site-title {
 		margin: 0;
 		font-size: 1.5rem;
-		font-weight: normal;
+		font-weight: var(--font-weight-medium);
+		line-height: 1;
 	}
 
-	h1 a {
-		color: #111827;
+	.site-title a {
+		color: var(--text);
 		text-decoration: none;
 	}
 
 	nav a {
-		color: #f97316;
+		color: var(--accent);
 		text-decoration: none;
 		font-size: 1rem;
+		line-height: 1;
 	}
 
 	nav a:hover {
+		color: var(--accent-hover);
 		text-decoration: underline;
 	}
 
 	@media (max-width: 768px) {
-		.container {
-			padding: 0 1rem;
-		}
-
-		h1 {
-			font-size: 1.25rem;
+		.site-title {
+			font-size: 1rem;
 		}
 	}
 </style>
