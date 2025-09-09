@@ -14,6 +14,11 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Configure git
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          
       - name: Update submodule
         run: |
           git submodule update --remote src/content/writing
