@@ -50,30 +50,130 @@ git commit -m "Your commit message"
 git push origin main
 ```
 
+### Content Management with Git Submodules
+
+This project uses Git submodules to manage content separately from the site code. The content lives in the `meaningfool-writing` repository and is included as a submodule.
+
+#### Initial Clone
+```bash
+# Clone the repository with submodules
+git clone --recursive https://github.com/meaningfool/meaningfool.github.io.git
+
+# Or if already cloned, initialize submodules
+git submodule init
+git submodule update
+```
+
+#### Content Update Workflow
+```bash
+# Method 1: Update content in the writing repository
+cd /path/to/meaningfool-writing
+# Make content changes
+git add . && git commit -m "Add new article" && git push origin main
+
+# Back to main site - update submodule reference
+cd /path/to/meaningfool.github.io
+git submodule update --remote src/content/writing
+git add src/content/writing
+git commit -m "Update content submodule"
+git push origin main
+```
+
+#### Working with Submodules
+```bash
+# Update submodule to latest content
+git submodule update --remote src/content/writing
+
+# Check submodule status
+git submodule status
+
+# Reset submodule if needed
+git submodule deinit src/content/writing
+git submodule init
+git submodule update
+```
+
+#### Content Repository Structure
+```
+meaningfool-writing/
+├── sample-article-1.md    # Individual articles (markdown)
+├── sample-article-2.md    # More articles
+└── README.md              # Content repository documentation
+```
+
+#### Content Collection Configuration
+Articles from the submodule are configured as the `writing` collection in `src/content/config.ts`:
+
+```typescript
+const writing = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    date: z.date(),
+    description: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+  }),
+});
+```
+
+#### Automated Updates
+The repository includes GitHub Actions workflows:
+- `deploy.yml`: Updated to include recursive submodules for deployment
+- `update-content.yml`: Automated submodule updates (can be triggered manually or via webhook)
+
+#### Troubleshooting Submodules
+```bash
+# If submodule appears empty after clone
+git submodule init && git submodule update
+
+# If submodule is stuck or corrupted
+git submodule deinit src/content/writing
+git submodule init
+git submodule update
+
+# Force update submodule to latest
+git submodule update --remote --force src/content/writing
+```
+
 ## High-Level Architecture
 
 ### Directory Structure
 
 ```
 meaningfool.github.io/
-├── public/                 # Static assets served as-is
-│   └── favicon.svg        # Site favicon
-├── src/                   # Source code
-│   ├── assets/           # Images and assets (processed by Astro)
+├── .github/              # GitHub Actions workflows
+│   └── workflows/
+│       ├── deploy.yml    # Deployment workflow (with submodule support)
+│       └── update-content.yml # Automated content updates
+├── public/               # Static assets served as-is
+│   └── favicon.svg      # Site favicon
+├── src/                 # Source code
+│   ├── assets/          # Images and assets (processed by Astro)
 │   │   ├── astro.svg
 │   │   └── background.svg
-│   ├── components/       # Reusable Astro components
-│   │   └── Welcome.astro # Welcome component (starter template)
-│   ├── layouts/          # Page layouts
-│   │   └── Layout.astro  # Base HTML layout
-│   └── pages/            # File-based routing
-│       └── index.astro   # Homepage (/)
-├── .gitignore            # Git ignore rules
-├── astro.config.mjs      # Astro configuration
-├── bun.lock              # Bun package lock file
-├── package.json          # Project dependencies and scripts
-├── README.md             # Project documentation
-└── tsconfig.json         # TypeScript configuration
+│   ├── components/      # Reusable Astro components
+│   │   ├── ArticlesList.astro
+│   │   └── Header.astro
+│   ├── content/         # Content collections
+│   │   ├── config.ts    # Content collection schemas
+│   │   └── writing/     # Git submodule → meaningfool-writing repo
+│   │       ├── sample-article-1.md
+│   │       └── sample-article-2.md
+│   ├── layouts/         # Page layouts
+│   │   └── Layout.astro # Base HTML layout
+│   └── pages/           # File-based routing
+│       ├── articles/
+│       │   └── [slug].astro  # Dynamic article pages
+│       ├── about.astro       # About page
+│       └── index.astro       # Homepage (/)
+├── .gitignore           # Git ignore rules
+├── .gitmodules          # Git submodule configuration
+├── astro.config.mjs     # Astro configuration
+├── bun.lock             # Bun package lock file
+├── CLAUDE.md            # Claude Code instructions
+├── package.json         # Project dependencies and scripts
+├── README.md            # Project documentation
+└── tsconfig.json        # TypeScript configuration
 ```
 
 ### Key Architectural Patterns
