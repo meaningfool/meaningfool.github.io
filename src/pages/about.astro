@@ -1,0 +1,68 @@
+---
+import Header from '../components/Header.astro';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+	<Header />
+	<main class="container">
+		<h1>About</h1>
+		<div class="content">
+			<p>Engineer-turned product manager with a passion for building ambitious products in complex enterprise and B2B environments.</p>
+			
+			<p>I have hands-on experience across the full product development lifecycle, from technical architecture to user research, strategy definition, and team leadership. My engineering background gives me a unique perspective on what's technically feasible while maintaining focus on user outcomes and business value.</p>
+
+			<p>Currently, I'm exploring the intersection of product management and emerging AI technologies. I tinker with Python, experiment with GenAI tools like OpenAI API, LangChain, and LlamaIndex, and enjoy diving deep into the complexity of enterprise systems.</p>
+
+			<p>Through my writing, I share insights about product strategy, data-driven decision making, team collaboration, and the tools and methodologies that help teams build better products. I believe in taking ambitious bets while maintaining a pragmatic approach to execution.</p>
+
+			<p>When I'm not building products or writing about them, you'll find me exploring new technologies, reading about system design, or thinking about how to make complex B2B workflows more intuitive and delightful.</p>
+		</div>
+	</main>
+</Layout>
+
+<style>
+	.container {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 0 1rem;
+		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+	}
+
+	h1 {
+		font-size: 2rem;
+		color: #111827;
+		margin: 2rem 0 1.5rem 0;
+		font-weight: normal;
+	}
+
+	.content {
+		padding-bottom: 2rem;
+	}
+
+	.content p {
+		font-size: 1rem;
+		line-height: 1.6;
+		color: #374151;
+		margin-bottom: 1.5rem;
+	}
+
+	.content p:last-child {
+		margin-bottom: 0;
+	}
+
+	@media (max-width: 768px) {
+		.container {
+			padding: 0 1rem;
+		}
+
+		h1 {
+			font-size: 1.75rem;
+			margin: 1.5rem 0 1rem 0;
+		}
+
+		.content {
+			padding-bottom: 1.5rem;
+		}
+	}
+</style>

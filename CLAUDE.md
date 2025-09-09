@@ -4,9 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an **Astro** static site generator project set up for `meaningfool.github.io`. The project appears to be a GitHub Pages personal website that was recently initialized from the Astro "basics" template.
+This is an **Astro** static site generator project set up for `meaningfool.github.io` deployed on GitHub Pages.
 
-**Project Name:** solar-star  
 **Framework:** Astro v5.13.5  
 **Package Manager:** Bun  
 **Language:** TypeScript/JavaScript  

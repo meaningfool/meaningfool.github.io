@@ -1,11 +1,157 @@
 ---
-import Welcome from '../components/Welcome.astro';
+import Header from '../components/Header.astro';
 import Layout from '../layouts/Layout.astro';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const articles = [
+	{
+		title: "Outcome ou Output? 1 question et 2 conseils pour les identifier et les rédiger correctement",
+		date: "2023-06-16",
+		slug: "outcome-ou-output",
+		tags: ["product", "management"]
+	},
+	{
+		title: "Designers vs Développeurs",
+		date: "2023-05-23",
+		slug: "designers-vs-developpeurs",
+		tags: ["collaboration", "team"]
+	},
+	{
+		title: "Qu'est-ce qu'une bonne stratégie ?",
+		date: "2023-05-30",
+		slug: "bonne-strategie",
+		tags: ["strategy", "product"]
+	},
+	{
+		title: "Ne demandez plus \"pourquoi ?\"",
+		date: "2023-06-16",
+		slug: "ne-demandez-plus-pourquoi",
+		tags: ["communication", "leadership"]
+	},
+	{
+		title: "Utilisation du Domain-Driven Design",
+		date: "2023-06-14",
+		slug: "domain-driven-design",
+		tags: ["engineering", "architecture"]
+	},
+	{
+		title: "Lean on solutions",
+		date: "2023-06-26",
+		slug: "lean-on-solutions",
+		tags: ["methodology", "product"]
+	},
+	{
+		title: "Le jour où j'ai arrêté d'utiliser des frameworks de priorisation",
+		date: "2023-07-19",
+		slug: "frameworks-priorisation",
+		tags: ["product", "methodology"]
+	}
+];
 ---
 
 <Layout>
-	<Welcome />
+	<Header />
+	<main class="container">
+		<section class="intro">
+			<p>Engineer-turned product manager. Hands-on builder who likes ambitious bets and exploring complexity in enterprise/B2B systems. I tinker with Python and GenAI (OpenAI API, LangChain, LlamaIndex) and write about product, data, and tooling.</p>
+		</section>
+
+		<section class="articles">
+			<h2># Articles</h2>
+			<ul>
+				{articles.map(article => (
+					<li>
+						<span class="bullet">*</span>
+						<a href={`/${article.slug}`} class="article-link">{article.title}</a>
+						<span class="date">{article.date}</span>
+					</li>
+				))}
+			</ul>
+		</section>
+	</main>
 </Layout>
+
+<style>
+	.container {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 0 1rem;
+		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+	}
+
+	.intro {
+		padding: 2rem 0;
+	}
+
+	.intro p {
+		font-size: 1rem;
+		line-height: 1.6;
+		color: #374151;
+		margin: 0;
+	}
+
+	.articles {
+		padding-bottom: 2rem;
+	}
+
+	.articles h2 {
+		font-size: 1.25rem;
+		color: #f97316;
+		font-weight: normal;
+		margin: 0 0 1rem 0;
+	}
+
+	.articles ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.articles li {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+		line-height: 1.4;
+	}
+
+	.bullet {
+		color: #374151;
+		flex-shrink: 0;
+	}
+
+	.article-link {
+		color: #f97316;
+		text-decoration: underline;
+		flex-grow: 1;
+	}
+
+	.article-link:hover {
+		text-decoration: none;
+	}
+
+	.date {
+		color: #6b7280;
+		font-size: 0.9rem;
+		flex-shrink: 0;
+	}
+
+	@media (max-width: 768px) {
+		.container {
+			padding: 0 1rem;
+		}
+
+		.intro {
+			padding: 1.5rem 0;
+		}
+
+		.articles li {
+			flex-wrap: wrap;
+		}
+
+		.date {
+			width: 100%;
+			margin-left: 1rem;
+			font-size: 0.85rem;
+		}
+	}
+</style>

@@ -1,0 +1,55 @@
+<header>
+	<div class="container">
+		<h1><a href="/">meaningfool</a></h1>
+		<nav>
+			<a href="/about">About</a>
+		</nav>
+	</div>
+</header>
+
+<style>
+	header {
+		padding: 1rem 0;
+		border-bottom: 1px solid #e5e7eb;
+	}
+
+	.container {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 0 1rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	h1 {
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: normal;
+	}
+
+	h1 a {
+		color: #111827;
+		text-decoration: none;
+	}
+
+	nav a {
+		color: #f97316;
+		text-decoration: none;
+		font-size: 1rem;
+	}
+
+	nav a:hover {
+		text-decoration: underline;
+	}
+
+	@media (max-width: 768px) {
+		.container {
+			padding: 0 1rem;
+		}
+
+		h1 {
+			font-size: 1.25rem;
+		}
+	}
+</style>
