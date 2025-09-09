@@ -4,9 +4,7 @@ import Layout from '../layouts/Layout.astro';
 import ArticlesList from '../components/ArticlesList.astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 
-const articles: CollectionEntry<'articles'>[] = await getCollection('articles', ({ data }) => {
-	return !data.draft;
-});
+const articles: CollectionEntry<'writing'>[] = await getCollection('writing');
 
 // Sort articles by date (most recent first)
 const sortedArticles = articles.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());

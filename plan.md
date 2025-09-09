@@ -1,330 +1,329 @@
-# meaningfool Style Implementation Plan
+# Content Management with Git Submodules Plan
 
-## Current State Analysis
+## Overview
 
-### Typography
-**Current State:**
-- Font: Inter font family (`Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif`)
-- Body: 16px, line-height varies (1.6 for intro, 1.4 for articles)
-- Headers: h1 varies by page (2rem on about, 1.5rem brand), h2 is 1.25rem
-- Font weights: "normal" used throughout
+This plan details the step-by-step process to set up a Git submodule system for managing content from the `meaningfool-writing` repository, which doesn't exist yet. We'll create both repositories and establish the submodule connection.
 
-**Target State (from style guide):**
-- Font: Space Mono everywhere (`'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace`)
-- Body: 16px / 28px line-height, weight 400
-- h2: 20px globally, weight 500
-- Headers: responsive with clamp(), weight 500, line-height 1.25, letter-spacing -0.015em
-- Brand: 18px, weight 500
+## Current State
 
-### Colors
-**Current State:**
-- Accent color: #f97316 (orange-500)
-- Text colors: #111827 (gray-900), #374151 (gray-700), #6b7280 (gray-500)
-- Background: white (implied)
-- No dark mode support
+- Main repository: `meaningfool.github.io` (exists, Astro site)
+- Content repository: `meaningfool-writing` (does not exist yet)
+- Articles currently: Stored as markdown files in `src/content/articles/`
+- About page: Content stays in `src/pages/about.astro`
+- Articles location: Will move to `src/content/writing/` via submodule
 
-**Target State (from style guide):**
-- Accent: Balanced Orange #FF7A1E (hover #E66A18)
-- HSL tokens: `--accent-h: 25; --accent-s: 100%; --accent-l: 56%;`
-- Comprehensive color system with CSS custom properties
+## Phase 0: Branch Setup
 
-### Layout & Structure
-**Current State:**
-- Container: max-width 800px, padding 0 1rem
-- Header: Border bottom, 1rem vertical padding
-- Navigation: Separate /about page
-- No footer
+### 0.1 Create Feature Branch
+**Actions:**
+1. Create and switch to a new branch for submodule work
+2. This allows safe experimentation without affecting main branch
+3. Enables easy rollback if issues arise
 
-**Target State (from style guide):**
-- Container: 70ch measure with 1.5rem side padding
-- Header: 1.25rem vertical padding
-- Navigation: Keep /about page link (not anchor)
-- Footer with copyright
-- Brief about section on homepage + detailed /about page
-
-### Components Structure
-**Current State:**
-- Separate Header.astro component
-- Separate /about page
-- Articles hardcoded in frontmatter
-- No skip-link or advanced accessibility features
-
-**Target State (from style guide):**
-- Integrated header with brand and nav
-- Brief about paragraph on homepage + separate detailed /about page
-- Articles with "# " prefix and inline dates
-- Skip-link and focus-visible states
-
-## Detailed Implementation Items
-
-### 1. Font System Migration
-**What needs to change:**
-- Replace Inter with Space Mono in all components
-- Add Google Fonts link to Layout.astro
-- Update all font-size and line-height values
-- Implement responsive heading scale with clamp()
-
-**Technical approach:**
-```html
-<!-- Add to Layout.astro <head> -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500&display=swap" rel="stylesheet">
+**Commands:**
+```bash
+# In main site directory
+cd /Users/josselinperrus/Projects/meaningfool.github.io
+git checkout -b feature/content-submodule
+git push -u origin feature/content-submodule
 ```
 
-**Impact:** All text will change appearance. Space Mono is monospace, so layout may need adjustments.
+**Benefits:**
+- Safe to experiment without affecting main branch
+- Can create PR for review before merging
+- Easy rollback if submodule setup has issues
+- Allows testing deployment on branch before merging
 
-**Files affected:**
-- `src/layouts/Layout.astro` (add font link)
-- `src/components/Header.astro` (update font-family, sizes, weights)
-- `src/pages/index.astro` (update font-family, sizes, line-heights)
-- `src/pages/about.astro` (update font-family, sizes)
+## Phase 1: Create and Set Up Content Repository
 
-### 2. Color System Implementation
-**What needs to change:**
-- Replace #f97316 with #FF7A1E throughout
-- Implement HSL token system with CSS custom properties
-- Update all hardcoded colors to use tokens
+### 1.1 Create meaningfool-writing Repository
+**Actions:**
+1. Create new GitHub repository: `meaningfool-writing`
+2. Initialize with README.md
+3. Clone locally to work with it
+4. Set up directory structure
 
-**Technical approach:**
-Create CSS custom properties in Layout.astro:
-```css
-:root {
-  --accent-h: 25; --accent-s: 100%; --accent-l: 56%;
-  --accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
-  --accent-hover: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) - 8%));
-  --bg: #ffffff; --text: #0c0c0d; --muted: #6b7280; --border: #e6e8eb;
-}
+**Directory structure for meaningfool-writing:**
+```
+meaningfool-writing/
+├── articles/              # Blog posts/articles
+│   ├── article-1.md      # Individual articles
+│   ├── article-2.md
+│   └── images/           # Article images
+│       ├── article-1/
+│       └── article-2/
+└── README.md            # Repository documentation
 ```
 
-**Impact:** Colors will shift slightly to warmer orange tones.
-
-**Files affected:** All component files need color updates.
-
-### 3. Layout System Update
-**What needs to change:**
-- Change max-width from 800px to 70ch
-- Update padding from 1rem to 1.5rem
-- Implement consistent spacing using tokens
-
-**Technical approach:**
-```css
-:root {
-  --measure: 70ch;
-  --container-pad: 1.5rem;
-}
-.container {
-  width: min(var(--measure), 100%);
-  margin-inline: auto;
-  padding-inline: var(--container-pad);
-}
+**Commands to execute:**
+```bash
+# After creating repo on GitHub
+git clone https://github.com/meaningfool/meaningfool-writing.git
+cd meaningfool-writing
+mkdir -p articles/images
+touch articles/.gitkeep
+git add .
+git commit -m "Initial repository structure"
+git push origin main
 ```
 
-**Impact:** Content will be slightly narrower, more consistent with readability best practices.
+### 1.2 Create Sample Content
+**Actions:**
+1. Create 2-3 sample markdown articles
+2. Add sample images for testing
+3. Commit and push to establish content
 
-**Files affected:** All files with .container classes.
+**Sample article format:**
+```markdown
+---
+title: "Sample Article Title"
+date: "2024-01-15"
+description: "Brief description of the article"
+tags: ["tag1", "tag2"]
+---
 
-### 4. Homepage Structure Update
-**What needs to change:**
-- Add brief About section to homepage (single paragraph)
-- Keep separate /about page for detailed information
-- Navigation remains as traditional page link (not anchor)
-- Add proper semantic sections
+# Article Content
 
-**Technical approach:**
-```html
-<main>
-  <section id="about">
-    <p>Brief single paragraph intro about Josselin</p>
-  </section>
-  <section id="articles" aria-labelledby="articles-title">
-    <h2 id="articles-title" class="post-title">Articles</h2>
-    <!-- articles list -->
-  </section>
-</main>
+Sample article content here...
 ```
 
-**Impact:** Homepage gets brief intro, detailed About page remains for full bio.
-
-**Clarification:** The About section on homepage serves as a brief introduction, while the /about page contains comprehensive information about background, experience, and interests.
-
-**Files affected:**
-- `src/pages/index.astro` (add about section)
-- `src/components/Header.astro` (no change needed)
-- `src/pages/about.astro` (keep and style consistently)
-
-### 5. Articles List Styling
-**What needs to change:**
-- Implement "# " prefix using `.post-title::before`
-- Make dates inline after titles (not flexbox alignment)
-- Update spacing to match style guide (.15rem between items)
-- Remove explicit bullet characters, use CSS ::before
-
-**Technical approach:**
-```css
-.post-title::before { content:"# "; color:var(--accent); font-weight:700; }
-.articles-list li::before { content:"*"; margin-right:.5rem; }
-.articles-list .post-meta { color:var(--muted); margin-left:.5rem; }
+**Commands:**
+```bash
+# Create sample articles
+echo "Sample article 1" > articles/sample-1.md
+echo "Sample article 2" > articles/sample-2.md  
+git add .
+git commit -m "Add sample content for testing"
+git push origin main
 ```
 
-**Impact:** Visual changes to article list, more compact layout.
+## Phase 2: Add Submodule to Main Site
 
-**Files affected:** `src/pages/index.astro`
+### 2.1 Add Submodule
+**Actions:**
+1. Navigate to main site repository
+2. Add meaningfool-writing as submodule in src/content/
+3. Configure submodule settings
+4. Test submodule functionality
 
-### 6. Footer Addition
-**What needs to change:**
-- Add footer component or section
-- Include copyright notice
+**Commands:**
+```bash
+# In meaningfool.github.io directory
+cd /Users/josselinperrus/Projects/meaningfool.github.io
 
-**Technical approach:**
-```html
-<footer class="site">© 2025 Josselin Perrus</footer>
+# Add submodule - this creates src/content/writing/
+git submodule add https://github.com/meaningfool/meaningfool-writing.git src/content/writing
+
+# Initialize and update submodule
+git submodule init
+git submodule update
+
+# Commit the submodule addition
+git add .gitmodules src/content/writing
+git commit -m "Add meaningfool-writing content submodule"
+git push origin main
 ```
 
-**Impact:** Extends page height, provides site closure.
+### 2.2 Configure Astro Content Collections
+**Actions:**
+1. Update src/content/config.ts to point to submodule content
+2. Create content collection schema for articles
+3. Update existing components to use collections
 
-**Files affected:** `src/layouts/Layout.astro` or individual pages
+**File: src/content/config.ts**
+```typescript
+import { defineCollection, z } from 'astro:content';
 
-### 7. Accessibility Enhancements
-**What needs to change:**
-- Add skip-link for keyboard navigation
-- Implement proper focus-visible states
-- Add ARIA labels where specified
+const articles = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    date: z.date(),
+    description: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+  }),
+});
 
-**Technical approach:**
-```html
-<a class="skip-link" href="#main">Skip to main content</a>
+export const collections = {
+  articles: articles,
+};
 ```
-```css
-.skip-link:focus { left:1rem; top:1rem; background:var(--surface); }
-a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+**Commands:**
+```bash
+# Check if config exists and update it
+ls src/content/config.ts
+# Edit the file to point to the right directory structure
 ```
 
-**Impact:** Better accessibility compliance, no visual changes for mouse users.
+### 2.3 Update Site to Use Submodule Content
+**Actions:**
+1. Modify pages to read from collections instead of hardcoded data
+2. Update image paths to point to submodule
+3. Create dynamic routing for articles
+4. Test content rendering
 
-**Files affected:** `src/layouts/Layout.astro`, all components with links.
+**Files to modify:**
+- `src/pages/index.astro` - Update to use articles from submodule
+- `src/pages/articles/[slug].astro` - Update to use articles from submodule
+- `src/content/config.ts` - Update collection path to point to submodule
 
-## Decision Points for Review
+## Phase 3: Workflow and Automation
 
-### A. Navigation Strategy
-**Decision made:** Keep both approaches
-- Homepage has brief about section (no anchor navigation needed)
-- Separate /about page remains for detailed information
-- Navigation continues to point to /about page
-**Rationale:** Different content serves different purposes - homepage intro vs. detailed bio
+### 3.1 Development Workflow
+**Process:**
+1. Edit content in meaningfool-writing repository
+2. Push changes to meaningfool-writing
+3. Update submodule in main site
+4. Test and deploy
 
-### B. Content Management
-**Decision made:** Use content collections with markdown files
-- Articles stored as .md files in `src/content/articles/`
-- Images stored in `public/images/` folder  
-- Content collections already configured in `src/content/config.ts`
-**Future plan:** Use git submodules to pull content from separate repository
-**Implementation:**
-- Create dummy article files for development
-- Use Astro's content collections API to fetch and display articles
-- Set up proper routing for individual article pages
+**Commands for updating content:**
+```bash
+# In main site directory
+cd src/content/writing
+git pull origin main           # Get latest content
+cd ../../..                   # Back to main site root
+git add src/content/writing    # Stage submodule update
+git commit -m "Update content submodule"
+git push origin main
+```
 
-### C. CSS Architecture
-**Recommendation:** Hybrid approach with global tokens + component styles
-**Best Practice for Astro:**
-1. **Global styles location**: 
-   - Option A: In `Layout.astro` `<style is:global>` (simpler, good for small projects)
-   - Option B: Create `src/styles/global.css` and import in Layout.astro (better organization)
-   - **Recommended**: Option A for meaningfool's scope
+### 3.2 Automated Submodule Updates (Optional)
+**Actions:**
+1. Create GitHub Action to auto-update submodule
+2. Trigger site rebuild when content changes
+3. Set up proper permissions
 
-2. **Structure**:
-   ```astro
-   <!-- In Layout.astro -->
-   <style is:global>
-     /* CSS custom properties (tokens) */
-     /* Base typography rules */
-     /* Global utilities (.container, .skip-link) */
-   </style>
-   ```
+**File: .github/workflows/update-content.yml**
+```yaml
+name: Update Content Submodule
+on:
+  repository_dispatch:
+    types: [content-updated]
+  workflow_dispatch:
 
-3. **Component styles**: Keep component-specific styles in each .astro file
-   - Use CSS custom properties from global tokens
-   - Scoped by default (Astro adds unique classes)
+jobs:
+  update-content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update submodule
+        run: |
+          git submodule update --remote src/content/writing
+          git add src/content/writing
+          if git diff --cached --quiet; then
+            echo "No content changes"
+          else
+            git commit -m "Auto-update content submodule"
+            git push
+          fi
+```
 
-**Rationale**: This approach provides consistency via tokens while allowing component flexibility
+## Phase 4: Testing and Validation
 
-### D. Font Loading Strategy
-**Decision made:** Self-hosted fonts
-**Implementation for GitHub Pages:**
+### 4.1 Local Testing Steps
+**Tests to perform:**
+1. Clone site fresh and verify submodule works
+2. Test content updates propagate correctly  
+3. Verify images load from submodule
+4. Check article routing works
+5. Validate build process includes submodule content
 
-1. **Font files location**: `public/fonts/` directory
-   - Download Space Mono woff2 files (weights 400, 500)
-   - GitHub Pages serves everything in public/ as static assets
+**Commands:**
+```bash
+# Test fresh clone
+rm -rf test-clone
+git clone --recursive https://github.com/meaningfool/meaningfool.github.io.git test-clone
+cd test-clone
+bun install
+bun dev
+# Visit localhost:4321 and verify content loads
+```
 
-2. **CSS implementation**:
-   ```css
-   @font-face {
-     font-family: 'Space Mono';
-     src: url('/fonts/space-mono-400.woff2') format('woff2');
-     font-weight: 400;
-     font-display: swap; /* Better loading performance */
-   }
-   ```
+### 4.2 Deployment Testing
+**Tests to perform:**
+1. Verify GitHub Actions handles submodules
+2. Check deployed site includes submodule content
+3. Test content update workflow end-to-end
 
-3. **No known issues with GitHub Pages**:
-   - Static font files work perfectly
-   - Better performance than Google Fonts (no external requests)
-   - GDPR compliant (no third-party tracking)
+**GitHub Actions considerations:**
+- Ensure workflow uses `submodules: recursive`
+- Check permissions allow submodule access
+- Verify build process includes content from submodule
 
-**Benefits**: Faster loading, privacy-friendly, works offline
+## Phase 5: Documentation and Maintenance
 
-## Implementation Order & Dependencies
+### 5.1 Update Documentation
+**Actions:**
+1. Update CLAUDE.md with submodule workflow
+2. Document content editing process
+3. Add troubleshooting guide
 
-### Phase 1: Foundation (Low Risk)
-1. Download and add Space Mono font files to public/fonts/
-2. Implement CSS custom properties system in Layout.astro
-3. Add footer structure
-4. Create public/images/ directory for article images
-5. Create dummy markdown articles in src/content/articles/
+### 5.2 Common Operations Documentation
+**Document these workflows:**
 
-### Phase 2: Visual Updates (Medium Risk)
-6. Update color system throughout components
-7. Migrate typography (font-family, sizes, weights)
-8. Update layout measurements (70ch, 1.5rem padding)
+**Adding new content:**
+```bash
+cd meaningfool-writing
+# Create new article
+git add . && git commit -m "Add new article"
+git push origin main
 
-### Phase 3: Structure Changes (Medium Risk)
-9. Add About section to homepage (brief intro)
-10. Update homepage to use content collections for articles
-11. Restyle articles list (prefix, inline dates)
-12. Create dynamic article pages route
+cd ../meaningfool.github.io
+git submodule update --remote src/content/writing
+git add src/content/writing
+git commit -m "Update content"
+git push origin main
+```
 
-### Phase 4: Enhancements (Low Risk)
-13. Add accessibility features (skip-link, focus states)
-14. Test responsive behavior
+**Troubleshooting submodules:**
+```bash
+# Reset submodule if stuck
+git submodule deinit src/content/writing
+git submodule init
+git submodule update
 
-## Risk Assessment
+# Force update submodule
+git submodule update --remote --force src/content/writing
+```
 
-**Low Risk Items:**
-- Color updates (easily reversible)
-- Typography changes (visual only)
-- CSS custom properties (additive)
+## Risk Assessment and Mitigation
 
-**Medium Risk Items:**
-- Layout measurement changes (may affect responsive behavior)
-- Footer addition (extends page structure)
-- Homepage content addition (adding About section)
-- Articles list restructuring (visual changes)
+### Potential Issues:
+1. **Submodule not initialized on fresh clones**
+   - Mitigation: Update GitHub Actions to use `--recursive`
+   - Document clone command: `git clone --recursive`
 
-## Files Summary
+2. **Content out of sync**
+   - Mitigation: Clear workflow documentation
+   - Consider automated updates
 
-**Files to Modify:**
-- `src/layouts/Layout.astro` (major: add fonts, CSS tokens, possibly footer)
-- `src/components/Header.astro` (minor: styling updates only)
-- `src/pages/index.astro` (moderate: add About section, restyle articles)
-- `src/pages/about.astro` (minor: apply consistent styling)
+3. **Build failures if submodule missing**
+   - Mitigation: Add fallback content or error handling
+   - Test deployment thoroughly
 
-**Files to Add:**
-- Font files in `public/fonts/`
-- Dummy article markdown files in `src/content/articles/`
-- Article images in `public/images/`
-- `src/pages/[...slug].astro` (dynamic route for article pages)
+4. **Permission issues accessing submodule**
+   - Mitigation: Use public repository
+   - Configure proper GitHub Actions permissions
 
-**Future Enhancement:**
-- Configure git submodules to pull articles from separate repository
+### Testing Checklist:
+- [ ] Fresh clone with `--recursive` works
+- [ ] Content displays correctly on site
+- [ ] Images load from submodule
+- [ ] Build process completes successfully
+- [ ] Deployment includes submodule content
+- [ ] Content updates propagate to live site
 
-This plan provides a comprehensive roadmap for aligning the current implementation with your style guide. Each item can be discussed and approved independently before implementation.
+## Success Criteria:
+1. meaningfool-writing repository created and populated
+2. Submodule successfully added to main site
+3. Content renders correctly from submodule
+4. Workflow for updating content is documented and tested
+5. Site builds and deploys with submodule content
+6. Team can edit content independently of site code
+
+This plan provides a comprehensive approach to setting up content management via Git submodules, with clear steps for testing and validation at each phase.

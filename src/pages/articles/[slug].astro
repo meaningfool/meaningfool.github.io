@@ -5,14 +5,14 @@ import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const articles = await getCollection('articles');
+  const articles = await getCollection('writing');
   return articles.map((article) => ({
     params: { slug: article.slug },
     props: article,
   }));
 }
 
-const article = Astro.props as CollectionEntry<'articles'>;
+const article = Astro.props as CollectionEntry<'writing'>;
 const { Content } = await article.render();
 ---
 
