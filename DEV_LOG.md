@@ -111,10 +111,72 @@
   - Workflow chaining sequence: Manual trigger → Content update → Automatic deployment
 - **Success criteria**: ✅ Two workflows in run list without manual deploy trigger
 
-### Phase 2.3: Repository Dispatch - DEFERRED ⏸️
+### Phase 2.3: Repository Dispatch - ABANDONED 🚫
 **Decision**: Manual triggering approach adopted instead of automatic webhooks
 
-**Extensive Research Findings (September 2024-2025)**:
+### Phase 3: Simplified Script-Based Publishing (September 11, 2025)
+**New Direction**: Replace PAT workflow chaining with simple dual-command script
+
+**Problem Identified**: PAT workflow chaining unreliable and adds complexity without clear benefit for infrequent publishing workflow.
+
+**Solution**: Create simple bash script in `meaningfool-writing` repo that runs both commands sequentially:
+
+```bash
+#!/bin/bash
+# publish-content.sh
+echo "🚀 Triggering content update..."
+gh workflow run update-content.yml --repo meaningfool/meaningfool.github.io
+
+echo "⏳ Waiting for content update to complete..."
+sleep 60
+
+echo "🏗️ Triggering deployment..."
+gh workflow run deploy.yml --repo meaningfool/meaningfool.github.io
+
+echo "✅ Both workflows triggered!"
+```
+
+**Benefits**:
+- ✅ Works for both cases: content changes AND no content changes
+- ✅ Predictable: Always results in deployment 
+- ✅ Simple: No complex automation to debug
+- ✅ Controlled: User sees exactly what happens
+- ✅ Handles failures: Can re-run deploy if needed
+
+**Implementation Status (September 11, 2025 - 14:50 UTC)**:
+
+**Current Situation**:
+- ✅ **Content Structure**: Fixed frontmatter validation issues in writing repo
+- ✅ **Local Sync**: Resolved submodule pointer divergence between local/remote
+- ⏳ **Testing**: Ready to test complete publish workflow with corrected content
+
+**Issues Debugged and Resolved**:
+1. **Frontmatter Schema Errors**: 
+   - Problem: `end-to-end-tests-1.md` had `publishDate:` instead of required `date:` field
+   - Root Cause: Local submodule was seeing stale commits, not latest GitHub state
+   - Solution: User had already fixed frontmatter on GitHub (`952c8f4`), local sync restored
+2. **Submodule Pointer Divergence**:
+   - Problem: Main repo submodule pointer lagged behind writing repo commits  
+   - Evidence: `+a010227` status showing local ahead of tracked commit
+   - Solution: Next publish command will update pointer and trigger deployment with corrected content
+
+**Validation Commands Added to CLAUDE.md**:
+```bash
+# Check for missing frontmatter fields
+grep -L "^title:" *.md | grep -v CLAUDE.md | grep -v README.md
+grep -L "^date:" *.md | grep -v CLAUDE.md | grep -v README.md
+```
+
+**Next Steps**:
+1. ⏳ **Test corrected publish workflow**: Run `gh workflow run update-content.yml --repo meaningfool/meaningfool.github.io` 
+2. Create `publish-content.sh` script in `meaningfool-writing` repository
+3. Clean up PAT automation artifacts:
+   - Remove `CONTENT_UPDATE_PAT` secret from main repo
+   - Revert `update-content.yml` to use default `GITHUB_TOKEN`
+   - Clean up any PAT references in documentation
+4. Update CLAUDE.md in writing repo to reference script instead of manual commands
+
+**Extensive Research Findings (September 2024-2025)** (preserved for future reference):
 
 **Security Considerations**:
 - **GhostAction Campaign (Sept 2024)**: 3,325 secrets stolen from 817 repositories via malicious workflow injection
@@ -229,11 +291,12 @@ echo "🚀 Publishing workflow triggered"
 ## Success Criteria
 - ✅ **Phase 2.1 Validated**: Manual push triggers deployment (token limitation confirmed)
 - ✅ **Phase 2.2 Complete**: PAT enables workflow-to-workflow triggering  
-- ⏸️ **Phase 2.3 Deferred**: Repository dispatch replaced with manual triggering approach
-- ✅ **Single manual trigger**: One command publishes content → automatic deployment
+- 🚫 **Phase 2.3 Abandoned**: Repository dispatch replaced with script-based approach
+- ✅ **Phase 3 Target**: Single script command publishes content → guaranteed deployment
 - ✅ **Production deployment**: New articles appear reliably when manually published
 - ✅ **Reliability**: Consistent, predictable behavior perfect for editorial workflow
 - ✅ **Editorial control**: Full control over publication timing and selective content publishing
+- ⏳ **Simplification**: Remove complex PAT automation in favor of straightforward script
 
 ## Key Files
 - **Config**: `astro.config.mjs` (✅ contains Vite symlink fix)
