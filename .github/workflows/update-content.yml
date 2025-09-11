@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          token: ${{ secrets.CONTENT_UPDATE_PAT }}
+          token: ${{ github.token }}
       
       - name: Configure git
         run: |
