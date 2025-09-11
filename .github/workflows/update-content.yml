@@ -24,11 +24,14 @@ jobs:
           
       - name: Update submodule
         run: |
-          git submodule update --remote src/content/writing
+          git submodule update --init --remote src/content/writing
           git add src/content/writing
+          git status --porcelain
           if git diff --cached --quiet; then
-            echo "No content changes"
+            echo "No content changes detected"
+            exit 0
           else
+            echo "Content changes detected!"
             git commit -m "Auto-update content submodule"
             git push
           fi
