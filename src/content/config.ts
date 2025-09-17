@@ -4,12 +4,9 @@ import { glob } from 'astro/loaders';
 const writing = defineCollection({
   loader: glob({
     pattern: [
-      '**/*.md',      // Include all markdown files
-      '!CLAUDE.md',   // Exclude documentation files
-      '!README.md',   // Exclude README
-      // Future exclusions:
-      // '!draft/**',     // Exclude draft directory
-      // '!scratchpad/**' // Exclude scratchpad directory
+      '*/**.md',        // Include markdown files only from visible folders
+      '!.*/**.md',      // Exclude hidden folders (starting with .)
+      '!*.md',          // Exclude root-level markdown files
     ],
     base: './src/content/writing'
   }),
