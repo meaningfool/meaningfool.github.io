@@ -42,6 +42,15 @@ Successfully implemented separated content management between `meaningfool.githu
   - Pattern: `entry.replace(/^(articles|daily-logs)\//, '').replace(/\.md$/, '')`
 - **Result**: ✅ Clean URLs like `/articles/faster-answers-better-questions` without path duplication
 
+### Issue 6: Content Collection Schema Validation
+- **Problem**: Content collection needed to handle new folder structure with proper validation
+- **Root Cause**: After content reorganization, needed to ensure schema validation works with new patterns
+- **Solution**:
+  - Updated content collection patterns to target `articles/*.md` and `daily-logs/*.md`
+  - Maintained existing Zod schema with required `title` and `date` fields
+  - Used `generateId` callback to create clean IDs from nested folder structure
+- **Result**: ✅ Content collection properly validates frontmatter and generates correct routes
+
 ## Critical GitHub Actions Limitation ⚠️
 
 **IMPORTANT**: This limitation caused repeated confusion and must be clearly understood:

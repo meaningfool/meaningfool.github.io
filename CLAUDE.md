@@ -96,8 +96,17 @@ Articles are configured in `src/content/config.ts`:
 ```typescript
 const writing = defineCollection({
   loader: glob({
-    pattern: ['**/*.md', '!CLAUDE.md', '!README.md'],
-    base: './src/content/writing'
+    pattern: [
+      'articles/*.md',  // Match .md files in articles/ folder
+      'daily-logs/*.md', // Match .md files in daily-logs/ folder
+      '!.*/**.md',      // Exclude hidden folders (starting with .)
+      '!*.md',          // Exclude root-level markdown files
+    ],
+    base: './src/content/writing',
+    generateId: ({ entry }) => {
+      // Strip folder prefix (articles/ or daily-logs/) and .md extension
+      return entry.replace(/^(articles|daily-logs)\//, '').replace(/\.md$/, '');
+    }
   }),
   schema: z.object({
     title: z.string(),
@@ -107,6 +116,11 @@ const writing = defineCollection({
   }),
 });
 ```
+
+**Key Features:**
+- **Folder-specific patterns**: Targets content in `articles/` and `daily-logs/` folders
+- **generateId callback**: Strips folder prefixes to create clean URLs (e.g., `/articles/my-post` instead of `/articles/articles/my-post`)
+- **Exclusion rules**: Ignores hidden folders and root-level markdown files
 
 ### Submodule Management
 
