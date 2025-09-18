@@ -27,11 +27,20 @@ Successfully implemented separated content management between `meaningfool.githu
 ### Issue 4: Astro 5 Content Collection API Compatibility
 - **Problem**: Build failed with "Missing parameter: slug" and "article.render is not a function"
 - **Root Cause**: Astro 5 changed content collection API (articles use `id` instead of `slug`, `render()` function import required)
-- **Solution**: 
+- **Solution**:
   - Updated `[slug].astro` to use `article.id` instead of `article.slug`
   - Updated `ArticlesList.astro` to use `article.id` for links
   - Changed from `article.render()` to `render(article)` with import from `astro:content`
 - **Result**: ✅ Build succeeds, all articles render correctly
+
+### Issue 5: Routing Duplication After Content Reorganization
+- **Problem**: Build failed with duplicated paths like `/articles/articles/faster-answers-better-questions`
+- **Root Cause**: Content reorganization moved articles into `articles/` folder, but glob pattern included folder name in content IDs
+- **Solution**:
+  - Added `generateId` callback to glob loader in `src/content/config.ts`
+  - Strips folder prefixes (`articles/` and `daily-logs/`) from content IDs
+  - Pattern: `entry.replace(/^(articles|daily-logs)\//, '').replace(/\.md$/, '')`
+- **Result**: ✅ Clean URLs like `/articles/faster-answers-better-questions` without path duplication
 
 ## Critical GitHub Actions Limitation ⚠️
 
