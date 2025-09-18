@@ -8,6 +8,7 @@ const writing = defineCollection({
       'daily-logs/*.md', // Match .md files in daily-logs/ folder
       '!.*/**.md',      // Exclude hidden folders (starting with .)
       '!*.md',          // Exclude root-level markdown files
+      '!images/*.md',   // Exclude markdown files in images folder
     ],
     base: './src/content/writing',
     generateId: ({ entry }) => {
