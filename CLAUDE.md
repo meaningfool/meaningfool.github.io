@@ -104,8 +104,15 @@ const writing = defineCollection({
     ],
     base: './src/content/writing',
     generateId: ({ entry }) => {
-      // Strip folder prefix (articles/ or daily-logs/) and .md extension
-      return entry.replace(/^(articles|daily-logs)\//, '').replace(/\.md$/, '');
+      // Strip folder prefix and .md extension
+      let id = entry.replace(/^(articles|daily-logs)\//, '').replace(/\.md$/, '');
+
+      // Only strip date prefix from articles (not daily-logs)
+      if (entry.startsWith('articles/')) {
+        id = id.replace(/^\d{4}-\d{2}-\d{2}-/, '');
+      }
+
+      return id;
     }
   }),
   schema: z.object({
@@ -119,7 +126,10 @@ const writing = defineCollection({
 
 **Key Features:**
 - **Folder-specific patterns**: Targets content in `articles/` and `daily-logs/` folders
-- **generateId callback**: Strips folder prefixes to create clean URLs (e.g., `/articles/my-post` instead of `/articles/articles/my-post`)
+- **generateId callback**: Strips folder prefixes and date prefixes from articles to create clean URLs
+  - Articles: `2025-01-15-my-post.md` → `/articles/my-post` (date stripped)
+  - Daily logs: `2025-01-15-notes.md` → `/articles/2025-01-15-notes` (date preserved)
+- **Backward compatible**: Existing articles without date prefixes remain unchanged
 - **Exclusion rules**: Ignores hidden folders and root-level markdown files
 
 ### Submodule Management

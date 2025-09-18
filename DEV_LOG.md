@@ -187,7 +187,15 @@ Git submodules with Astro 5 work reliably when properly configured, providing cl
 - **Result**: Date-prefixed files generate same URLs as before
 - **Example**: `2025-01-15-my-article.md` → `/articles/my-article`
 
-### Recommended Approach
-1. **Phase 1**: Add timestamps to existing date fields (no breaking changes)
-2. **Phase 2**: Consider filename convention change with URL preservation if filesystem organization becomes priority
+### Implementation Status ✅
+
+#### Completed: URL Preservation for Date-Prefixed Articles
+- **Implementation**: Updated `generateId` function in `src/content/config.ts`
+- **Logic**: Strips `YYYY-MM-DD-` prefix from articles only (preserves dates in daily-logs)
+- **Backward Compatible**: Existing articles without date prefixes unchanged
+- **Result**: Date-prefixed articles generate clean URLs while maintaining filesystem organization
+
+#### Next Steps
+1. **Content Strategy**: Consider adding timestamps to date fields for consistent ordering
+2. **Filename Convention**: Ready to adopt `YYYY-MM-DD-article-title.md` format when desired
 3. **Alternative**: Add secondary sort by `article.id` for consistent ordering without filename changes
