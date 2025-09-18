@@ -7,7 +7,7 @@
 		<meta name="generator" content={Astro.generator} />
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 		<title>meaningfool</title>
 	</head>
 	<body>
@@ -46,6 +46,7 @@
 		--line-height-body: 1.78;
 		--font-weight-normal: 400;
 		--font-weight-medium: 500;
+		--font-weight-semibold: 600;
 		--letter-spacing-tight: -0.015em;
 	}
 
@@ -120,7 +121,6 @@
 
 	/* Typography base */
 	h1, h2, h3, h4, h5, h6 {
-		font-weight: var(--font-weight-medium);
 		line-height: 1.25;
 		letter-spacing: var(--letter-spacing-tight);
 		margin: 0 0 0.5rem 0;
@@ -131,16 +131,29 @@
 		text-indent: -2ch;
 		padding-left: 2ch;
 		margin: 0 0 1rem 0;
+		font-weight: var(--font-weight-medium);
 	}
 
 	h1::before {
 		content: "# ";
 		color: var(--accent);
-		font-weight: 700;
+		font-weight: var(--font-weight-semibold);
 	}
-	
+
+	h2, h3, h4, h5, h6 {
+		font-weight: var(--font-weight-semibold);
+	}
+
 	h2 {
+		font-size: 1.375rem;
+	}
+
+	h3 {
 		font-size: 1.25rem;
+	}
+
+	h4, h5, h6 {
+		font-size: 1.125rem;
 	}
 
 	.section-title {
@@ -177,6 +190,101 @@
 
 	.footer a:last-child {
 		margin-right: 0;
+	}
+
+	/* Code styling */
+	code {
+		font-size: 0.9em;
+		background-color: #0d1117;
+		color: #f0f6fc;
+		padding: 0.2em 0.4em;
+		border-radius: 3px;
+	}
+
+	pre {
+		padding: 1rem;
+		border-radius: 6px;
+		overflow-x: auto;
+		line-height: 1.5;
+	}
+
+	pre code {
+		background: none;
+		color: inherit;
+		padding: 0;
+		font-size: inherit;
+	}
+
+	/* Blockquote styling */
+	blockquote {
+		margin: 1.5rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 4px solid var(--accent);
+		background-color: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.05);
+		font-style: italic;
+	}
+
+	blockquote p:last-child {
+		margin-bottom: 0;
+	}
+
+	/* Table styling */
+	table {
+		width: 100%;
+		margin: 1.5rem 0;
+		border-collapse: collapse;
+		font-size: inherit;
+	}
+
+	table th,
+	table td {
+		padding: 0.75rem;
+		border: 1px solid #000000;
+	}
+
+	table th {
+		font-weight: var(--font-weight-semibold);
+		background-color: var(--bg);
+	}
+
+	table tr:nth-child(even) {
+		background-color: #f9f9f9;
+	}
+
+	/* Task list styling */
+	ul li:has(input[type="checkbox"]) {
+		list-style: none;
+		margin-left: -1.5rem;
+	}
+
+	ul li:has(input[type="checkbox"]) input[type="checkbox"] {
+		margin-right: 0.5rem;
+	}
+
+	/* Footnotes styling */
+	.footnotes {
+		font-size: 0.875rem;
+		line-height: 1.4;
+		margin-top: 3rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--border);
+	}
+
+	.footnotes ol {
+		margin: 0;
+	}
+
+	.footnotes li {
+		margin-bottom: 0.5rem;
+	}
+
+	/* Image styling */
+	img {
+		max-width: 100%;
+		height: auto;
+		border-radius: 6px;
+		margin: 1rem 0;
+		display: block;
 	}
 
 </style>

@@ -61,12 +61,16 @@ const { Content } = await render(article);
 
   .article-content :global(h2) {
     margin: 2rem 0 1rem 0;
-    font-size: 1.25rem;
   }
 
   .article-content :global(h3) {
     margin: 1.5rem 0 0.75rem 0;
-    font-size: 1.125rem;
+  }
+
+  .article-content :global(h4),
+  .article-content :global(h5),
+  .article-content :global(h6) {
+    margin: 1rem 0 0.5rem 0;
   }
 
   .article-content :global(p) {

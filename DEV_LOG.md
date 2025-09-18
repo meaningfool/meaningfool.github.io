@@ -133,3 +133,17 @@ Manual publishing provides superior editorial control for infrequent content upd
 
 ### Technical Architecture
 Git submodules with Astro 5 work reliably when properly configured, providing clean separation between content and site code while maintaining single-command publishing workflow.
+
+## Image Asset Management Research (Sept 2025) 📷
+
+### Options Evaluated
+1. **Basic CSS Styling** - Style regular `<img>` tags from markdown
+2. **Astro Image Component** - Built-in `<Image />` with optimization (doesn't work with markdown)
+3. **Content Layer API (Astro 5.0)** - Type-safe image handling in frontmatter
+4. **Community Tools** - Third-party solutions like "Astro Markdown Eleventy Image"
+5. **Asset Management Strategy** - Submodule vs main repo vs CDN storage
+
+### Decision: Basic CSS (Option 1) + Future Content Layer API (Option 3)
+- **Current**: Implemented responsive CSS for markdown images (immediate compatibility, no workflow changes)
+- **Future**: Consider Astro 5 Content Layer API when advanced features needed (type safety, better performance)
+- **Rationale**: Preserves markdown portability and editorial workflow while keeping door open for optimization
