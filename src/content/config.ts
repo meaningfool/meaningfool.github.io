@@ -12,8 +12,15 @@ const writing = defineCollection({
     ],
     base: './src/content/writing',
     generateId: ({ entry }) => {
-      // Strip folder prefix (articles/ or daily-logs/) and .md extension
-      return entry.replace(/^(articles|daily-logs)\//, '').replace(/\.md$/, '');
+      // Strip folder prefix and .md extension
+      let id = entry.replace(/^(articles|daily-logs)\//, '').replace(/\.md$/, '');
+
+      // Only strip date prefix from articles (not daily-logs)
+      if (entry.startsWith('articles/')) {
+        id = id.replace(/^\d{4}-\d{2}-\d{2}-/, '');
+      }
+
+      return id;
     }
   }),
   schema: z.object({

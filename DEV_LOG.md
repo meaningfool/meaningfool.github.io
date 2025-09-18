@@ -147,3 +147,47 @@ Git submodules with Astro 5 work reliably when properly configured, providing cl
 - **Current**: Implemented responsive CSS for markdown images (immediate compatibility, no workflow changes)
 - **Future**: Consider Astro 5 Content Layer API when advanced features needed (type safety, better performance)
 - **Rationale**: Preserves markdown portability and editorial workflow while keeping door open for optimization
+
+## Article Ordering and Filename Convention Research (Sept 2025) 📝
+
+### Current Article Sorting Issue
+- **Problem**: Articles with identical dates have unpredictable ordering on front page
+- **Root Cause**: Sort function in `src/pages/index.astro:10` only compares dates: `b.data.date.getTime() - a.data.date.getTime()`
+- **Impact**: When dates are equal, JavaScript sort maintains original order (filesystem-dependent, inconsistent)
+
+### Solutions for Consistent Ordering
+
+#### Option 1: Add Timestamps to Dates (Recommended)
+- **Frontmatter format**: `date: 2025-01-15T14:30:00Z` (ISO 8601 with time)
+- **Website changes**: None required - Astro's `z.date()` already handles ISO timestamps
+- **Benefits**: Simple, no code changes, precise ordering
+- **URLs**: Unchanged
+
+#### Option 2: Add Creation Time Field
+- **Schema update**: Add `createdAt: z.date()` field to content collection
+- **Sorting update**: Two-tier sort (date first, then createdAt for ties)
+- **Frontmatter format**: Separate `date` and `createdAt` fields
+- **Benefits**: Keeps display date separate from ordering mechanism
+
+### Filename Convention Change Analysis
+
+#### Proposed Change
+- **From**: `my-article-title.md`
+- **To**: `2025-01-15-my-article-title.md`
+
+#### Impact Assessment
+- **✅ No Impact**: Article list display, article content, date display (all use frontmatter data)
+- **⚠️ URL Changes**: Current `/articles/my-article-title` → New `/articles/2025-01-15-my-article-title`
+- **✅ Benefits**: Natural chronological file ordering, better organization
+- **🚨 Breaking**: Existing URLs will 404, SEO impact
+
+#### URL Preservation Solution
+- **Fix**: Update `generateId` function in `src/content/config.ts` to strip date prefix
+- **Pattern**: `id.replace(/^\d{4}-\d{2}-\d{2}-/, '')` strips `YYYY-MM-DD-` from filename
+- **Result**: Date-prefixed files generate same URLs as before
+- **Example**: `2025-01-15-my-article.md` → `/articles/my-article`
+
+### Recommended Approach
+1. **Phase 1**: Add timestamps to existing date fields (no breaking changes)
+2. **Phase 2**: Consider filename convention change with URL preservation if filesystem organization becomes priority
+3. **Alternative**: Add secondary sort by `article.id` for consistent ordering without filename changes
