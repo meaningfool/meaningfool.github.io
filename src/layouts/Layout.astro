@@ -7,7 +7,7 @@
 		<meta name="generator" content={Astro.generator} />
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500;600&family=Roboto+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 		<title>meaningfool</title>
 	</head>
 	<body>
@@ -32,7 +32,7 @@
 		--accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
 		--accent-hover: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) - 8%));
 		--bg: #ffffff;
-		--text: #000000;
+		--text: #0a0a0a;
 		--muted: #6b7280;
 		--border: #e6e8eb;
 
@@ -42,9 +42,10 @@
 
 		/* Typography scale */
 		--font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+		--font-body: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 		--font-size-body: 1.125rem;
-		--line-height-body: 1.78;
-		--font-weight-normal: 400;
+		--line-height-body: 1.7;
+		--font-weight-normal: 300;
 		--font-weight-medium: 500;
 		--font-weight-semibold: 600;
 		--letter-spacing-tight: -0.015em;
@@ -62,7 +63,7 @@
 		margin: 0;
 		width: 100%;
 		height: 100%;
-		font-family: var(--font-mono);
+		font-family: var(--font-body);
 		font-size: var(--font-size-body);
 		line-height: var(--line-height-body);
 		font-weight: var(--font-weight-normal);
@@ -121,6 +122,7 @@
 
 	/* Typography base */
 	h1, h2, h3, h4, h5, h6 {
+		font-family: var(--font-mono);
 		line-height: 1.25;
 		letter-spacing: var(--letter-spacing-tight);
 		margin: 0 0 0.5rem 0;
@@ -168,6 +170,7 @@
 		margin: 0 0 1rem 0;
 		line-height: var(--line-height-body);
 	}
+
 
 	a {
 		color: var(--accent);
