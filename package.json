@@ -10,5 +10,8 @@
     "preview": "astro preview",
     "astro": "astro"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@astrojs/sitemap": "^3.6.0"
+  }
 }

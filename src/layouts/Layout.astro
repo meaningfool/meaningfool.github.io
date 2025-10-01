@@ -1,3 +1,8 @@
+---
+// Use Astro's built-in URL handling for canonical URLs
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+---
+
 <!doctype html>
 <html lang="en">
 	<head>
@@ -5,6 +10,7 @@
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
+		<link rel="canonical" href={canonicalURL} />
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500;600&family=Roboto+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
