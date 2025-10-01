@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 
+Sitemap: https://meaningfool.net/sitemap.xml
 Sitemap: https://meaningfool.net/sitemap-index.xml

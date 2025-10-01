@@ -3,6 +3,7 @@ import type { GetStaticPaths } from 'astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
+import JsonLd from '../../components/JsonLd.astro';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const articles = await getCollection('writing');
@@ -14,9 +15,29 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 const article = Astro.props as CollectionEntry<'writing'>;
 const { Content } = await render(article);
+
+// JSON-LD structured data for BlogPosting
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": article.data.title,
+  "description": article.data.description || article.data.title,
+  "author": {
+    "@type": "Person",
+    "name": "Josselin Perrus"
+  },
+  "datePublished": article.data.date.toISOString(),
+  "url": canonical
+};
 ---
 
-<Layout>
+<Layout
+  title={`${article.data.title} | meaningfool`}
+  description={article.data.description || article.data.title}
+  type="article"
+>
+  <JsonLd data={articleSchema} />
   <Header />
   <main id="main" class="container">
     <article>
