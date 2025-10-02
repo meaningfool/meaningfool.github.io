@@ -3,6 +3,7 @@
 const {
   title = 'meaningfool',
   description = 'Personal site of Josselin Perrus, product manager in Paris',
+  ogImage = new URL('/og-default.png', Astro.site).toString(),
   type = 'website'
 } = Astro.props;
 
@@ -29,13 +30,15 @@ const canonical = canonicalURL.toString();
 		<meta property="og:type" content={type} />
 		<meta property="og:url" content={canonical} />
 		<meta property="og:site_name" content="meaningfool" />
+		<meta property="og:image" content={ogImage} />
 
 		<!-- Twitter Cards -->
-		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:site" content="@nonils" />
 		<meta name="twitter:creator" content="@nonils" />
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImage} />
 
 		<!-- RSS Feed -->
 		<link rel="alternate" type="application/rss+xml" title="meaningfool" href="/rss.xml">
