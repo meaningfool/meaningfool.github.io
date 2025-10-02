@@ -2,15 +2,29 @@
 import Header from '../components/Header.astro';
 import Layout from '../layouts/Layout.astro';
 import ArticlesList from '../components/ArticlesList.astro';
+import JsonLd from '../components/JsonLd.astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 
 const articles: CollectionEntry<'writing'>[] = await getCollection('writing');
 
 // Sort articles by date (most recent first)
 const sortedArticles = articles.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+// JSON-LD structured data for WebSite
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "meaningfool",
+  "url": "https://meaningfool.net",
+  "publisher": {
+    "@type": "Person",
+    "name": "Josselin Perrus"
+  }
+};
 ---
 
 <Layout>
+	<JsonLd data={websiteSchema} />
 	<Header />
 	<main id="main" class="container">
 		<section id="about">

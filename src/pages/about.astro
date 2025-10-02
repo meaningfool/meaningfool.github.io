@@ -1,9 +1,23 @@
 ---
 import Header from '../components/Header.astro';
 import Layout from '../layouts/Layout.astro';
+import JsonLd from '../components/JsonLd.astro';
+
+// JSON-LD structured data for Person
+const personSchema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Josselin Perrus",
+  "url": "https://meaningfool.net/about",
+  "sameAs": [
+    "https://github.com/meaningfool",
+    "https://twitter.com/nonils"
+  ]
+};
 ---
 
-<Layout>
+<Layout title="About | meaningfool" description="About Josselin Perrus - Product manager based in Paris">
+	<JsonLd data={personSchema} />
 	<Header />
 	<main id="main" class="container">
 		<div class="content">

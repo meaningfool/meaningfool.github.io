@@ -2,6 +2,7 @@
   "name": "solar-star",
   "version": "0.0.1",
   "dependencies": {
+    "@astrojs/rss": "^4.0.12",
     "astro": "^5.13.5"
   },
   "scripts": {
@@ -10,5 +11,8 @@
     "preview": "astro preview",
     "astro": "astro"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@astrojs/sitemap": "^3.6.0"
+  }
 }

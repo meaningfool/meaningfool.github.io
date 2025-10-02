@@ -1,3 +1,17 @@
+---
+// Accept props for meta tags
+const {
+  title = 'meaningfool',
+  description = 'Personal site of Josselin Perrus, product manager in Paris',
+  ogImage = new URL('/og-default.png', Astro.site).toString(),
+  type = 'website'
+} = Astro.props;
+
+// Use Astro's built-in URL handling for canonical URLs
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const canonical = canonicalURL.toString();
+---
+
 <!doctype html>
 <html lang="en">
 	<head>
@@ -5,10 +19,33 @@
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
+
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={canonical} />
+
+		<!-- Open Graph -->
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:type" content={type} />
+		<meta property="og:url" content={canonical} />
+		<meta property="og:site_name" content="meaningfool" />
+		<meta property="og:image" content={ogImage} />
+
+		<!-- Twitter Cards -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:site" content="@nonils" />
+		<meta name="twitter:creator" content="@nonils" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImage} />
+
+		<!-- RSS Feed -->
+		<link rel="alternate" type="application/rss+xml" title="meaningfool" href="/rss.xml">
+
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500;600&family=Roboto+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
-		<title>meaningfool</title>
+		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@500;600&family=Roboto+Mono:wght@300&display=swap" rel="stylesheet">
 	</head>
 	<body>
 		<a class="skip-link" href="#main">Skip to main content</a>
