@@ -45,7 +45,7 @@ const canonical = canonicalURL.toString();
 
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@500;600&family=Roboto+Mono:wght@300&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500;600;700&family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet">
 	</head>
 	<body>
 		<a class="skip-link" href="#main">Skip to main content</a>
@@ -78,7 +78,7 @@ const canonical = canonicalURL.toString();
 		--container-pad: 1.5rem;
 
 		/* Typography scale */
-		--font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+		--font-title: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 		--font-body: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 		--font-size-body: 1rem;
 		--line-height-body: 1.7;
@@ -159,7 +159,7 @@ const canonical = canonicalURL.toString();
 
 	/* Typography base */
 	h1, h2, h3, h4, h5, h6 {
-		font-family: var(--font-mono);
+		font-family: var(--font-title);
 		line-height: 1.25;
 		letter-spacing: var(--letter-spacing-tight);
 		margin: 0 0 0.5rem 0;
@@ -169,22 +169,22 @@ const canonical = canonicalURL.toString();
 		font-size: clamp(1.125rem, 2.5vw, 1.5rem);
 		text-indent: -2ch;
 		padding-left: 2ch;
-		margin: 0 0 1rem 0;
+		margin: 2.5rem 0 1rem 0;
 		font-weight: var(--font-weight-medium);
 	}
 
-	h1:not(:first-child) {
-		margin-top: 2.5rem;
+	h1:first-child {
+		margin-top: 0;
 	}
 
 	h1::before {
 		content: "# ";
 		color: var(--accent);
-		font-weight: var(--font-weight-semibold);
+		font-weight: var(--font-weight-medium);
 	}
 
 	h2, h3, h4, h5, h6 {
-		font-weight: var(--font-weight-semibold);
+		font-weight: var(--font-weight-medium);
 	}
 
 	h2 {
@@ -208,6 +208,9 @@ const canonical = canonicalURL.toString();
 		line-height: var(--line-height-body);
 	}
 
+	strong, b {
+		font-weight: 400;
+	}
 
 	a {
 		color: var(--accent);
