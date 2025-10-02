@@ -55,15 +55,18 @@ const { articles } = Astro.props;
 			display: flex;
 			flex-wrap: wrap;
 			align-items: baseline;
+			text-indent: 0;
+			padding-left: 0;
 		}
 
 		.articles-list li::before {
 			flex-shrink: 0;
+			margin-right: 0.5rem;
 		}
 
 		.post-meta {
 			width: 100%;
-			margin-left: 1rem;
+			margin-left: 1.5rem;
 			font-size: 0.85rem;
 		}
 	}
