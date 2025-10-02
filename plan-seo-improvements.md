@@ -221,57 +221,61 @@ Following the initial website indexing fixes, this streamlined plan focuses on t
   ```
 
 ### 10. llms.txt for AI Discovery
-**Priority: LOW** | **Time: 20-30 min**
+**Priority: LOW** | **Time: 30-40 min**
 
-**Research Findings & Existing Solutions:**
+**Implementation Strategy: Two-Phase Custom Build-Time Generation**
 
-**Available Implementations (Review for inspiration):**
-1. **@4hse/astro-llms-txt** - GitHub: 10★, 2 forks, NPM: v1.0.4
-   - Generates 3 formats (txt, small, full)
-   - Very low adoption, no dependent packages
-   - Company-backed but limited community
+#### Phase 1: Create `/llms.txt` (15-20 min)
+**Purpose:** Minimal index for AI agent discovery and navigation
 
-2. **@waldheimdev/astro-ai-llms-txt** - NPM: v1.1.3
-   - Alternative implementation
-   - Similar low adoption
-
-3. **ColdranAI/astro-llms-generate** - GitHub repository
-   - Fork of @4hse plugin for personal use
-   - Minimal adoption
-
-4. **Manual implementations** (most common):
-   - Astro Docs official implementation (static files)
-   - Multiple blog posts with custom solutions using content collections
-   - Most developers create custom `src/pages/llms.txt.ts` endpoints
-
-**Recommended Approach: Custom Dynamic Implementation**
-- [ ] Review existing implementations for inspiration
-- [ ] Create `src/pages/llms.txt.ts` using Astro content collections:
+- [ ] Create `src/pages/llms.txt.ts` with static generation:
   ```typescript
   import { getCollection } from "astro:content";
   import type { APIRoute } from "astro";
 
+  export const prerender = true; // Static generation at build time
+
   export const GET: APIRoute = async () => {
-    const articles = await getCollection("writing");
-    const sortedArticles = articles.sort((a, b) =>
-      b.data.date.getTime() - a.data.date.getTime()
-    );
+    const allContent = await getCollection("writing");
+    const buildTime = new Date().toISOString();
+
+    // Shared logic: Separate articles and daily logs based on title pattern
+    const dailyLogs = allContent.filter(item => item.data.title.startsWith('Activity Log'))
+      .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+    const articles = allContent.filter(item => !item.data.title.startsWith('Activity Log'))
+      .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
     const content = `# meaningfool
+> Personal website of Josselin Perrus, product manager in Paris. Generated: ${buildTime}
 
-> Personal website of Josselin Perrus, product manager in Paris
+## Scope
+All public content including articles and daily logs. Professional insights and work-in-progress thoughts.
 
-## Latest Articles
+## Content
 
-${sortedArticles.slice(0, 10).map(article =>
+### Articles
+${articles.map(article =>
   `- [${article.data.title}](https://meaningfool.net/articles/${article.id})`
-).join('\n')}
+).join('\n') || 'No articles yet'}
 
-## About
+### Daily Logs
+${dailyLogs.map(log =>
+  `- [${log.data.title}](https://meaningfool.net/articles/${log.id})`
+).join('\n') || 'No daily logs yet'}
 
-- [About](https://meaningfool.net/about): Background and experience
-- [All Articles](https://meaningfool.net/): Complete archive
-`;
+## Pages
+- [About](https://meaningfool.net/about)
+- [Home](https://meaningfool.net/)
+- [RSS Feed](https://meaningfool.net/rss.xml)
+
+## Full Content
+For complete markdown content, see [llms-full.txt](https://meaningfool.net/llms-full.txt)
+
+## License
+© ${new Date().getFullYear()} Josselin Perrus. Short quotations with attribution welcome.
+
+Generated: ${buildTime}`;
 
     return new Response(content, {
       headers: { "Content-Type": "text/plain; charset=utf-8" }
@@ -279,11 +283,157 @@ ${sortedArticles.slice(0, 10).map(article =>
   };
   ```
 
-**Why custom over plugins:**
-- All plugins have very low adoption (< 15 stars combined)
-- No clear winner or standard in ecosystem
-- Simple use case doesn't justify dependency risk
-- Full control over format and content selection
+#### Phase 2: Create `/llms-full.txt` (15-20 min)
+**Purpose:** Complete markdown content for comprehensive AI understanding
+
+- [ ] Create `src/pages/llms-full.txt.ts` with full content:
+  ```typescript
+  import { getCollection } from "astro:content";
+  import type { APIRoute } from "astro";
+  import fs from 'node:fs/promises';
+  import path from 'node:path';
+
+  export const prerender = true;
+
+  export const GET: APIRoute = async () => {
+    const allContent = await getCollection("writing");
+    const buildTime = new Date().toISOString();
+
+    // Reuse separation logic from llms.txt (title-based filtering)
+    const dailyLogs = allContent.filter(item => item.data.title.startsWith('Activity Log'))
+      .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+    const articles = allContent.filter(item => !item.data.title.startsWith('Activity Log'))
+      .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+    // Build full content with markdown
+    let fullContent = `# meaningfool - Full Content
+> Complete markdown content of all public articles and daily logs. Generated: ${buildTime}
+
+## Site Information
+Personal website of Josselin Perrus, product manager in Paris.
+
+---
+
+## Articles\n\n`;
+
+    // Add each article's full content
+    for (const article of articles) {
+      // Try to find the file - articles may have date prefixes
+      const articlesDir = path.join(process.cwd(), 'src/content/writing/articles');
+      let filePath: string | null = null;
+
+      try {
+        const files = await fs.readdir(articlesDir);
+        const matchingFile = files.find(file =>
+          file.endsWith(`-${article.id}.md`) || file === `${article.id}.md`
+        );
+
+        if (matchingFile) {
+          filePath = path.join(articlesDir, matchingFile);
+        }
+      } catch (error) {
+        console.warn(`Could not list articles directory`);
+      }
+
+      if (filePath) {
+        try {
+          const rawContent = await fs.readFile(filePath, 'utf-8');
+          // Remove frontmatter
+          let content = rawContent.replace(/^---[\s\S]*?---\n*/m, '');
+
+          // Bump all headers down by 2 levels to maintain hierarchy
+          // # becomes ###, ## becomes ####, etc.
+          content = content.replace(/^(#{1,4})\s/gm, (match, hashes) => {
+            return '#'.repeat(hashes.length + 2) + ' ';
+          });
+
+          fullContent += `### ${article.data.title}
+**URL**: https://meaningfool.net/articles/${article.id}
+**Date**: ${article.data.date.toISOString().split('T')[0]}
+**Type**: Article
+
+${content}
+
+---
+
+`;
+        } catch (error) {
+          console.warn(`Could not read article: ${article.id}`);
+        }
+      } else {
+        console.warn(`Could not find article file for: ${article.id}`);
+      }
+    }
+
+    fullContent += `## Daily Logs\n\n`;
+
+    // Add each daily log's full content
+    for (const log of dailyLogs) {
+      // Daily logs are in the daily-logs folder
+      const dailyLogsDir = path.join(process.cwd(), 'src/content/writing/daily-logs');
+      const filePath = path.join(dailyLogsDir, `${log.id}.md`);
+
+      try {
+        const rawContent = await fs.readFile(filePath, 'utf-8');
+        // Remove frontmatter
+        let content = rawContent.replace(/^---[\s\S]*?---\n*/m, '');
+
+        // Bump all headers down by 2 levels to maintain hierarchy
+        // # becomes ###, ## becomes ####, etc.
+        content = content.replace(/^(#{1,4})\s/gm, (match, hashes) => {
+          return '#'.repeat(hashes.length + 2) + ' ';
+        });
+
+        fullContent += `### ${log.data.title}
+**URL**: https://meaningfool.net/articles/${log.id}
+**Date**: ${log.data.date.toISOString().split('T')[0]}
+**Type**: Daily Log
+
+${content}
+
+---
+
+`;
+      } catch (error) {
+        console.warn(`Could not read daily log: ${log.id}`);
+      }
+    }
+
+    fullContent += `## Footer
+Generated: ${buildTime}
+Total Articles: ${articles.length}
+Total Daily Logs: ${dailyLogs.length}`;
+
+    // Monitor file size
+    const sizeInKB = Buffer.byteLength(fullContent, 'utf-8') / 1024;
+    if (sizeInKB > 1024) {
+      console.warn(`llms-full.txt is ${sizeInKB.toFixed(2)}KB - consider splitting`);
+    }
+
+    return new Response(fullContent, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" }
+    });
+  };
+  ```
+
+**Shared Components Between Both Files:**
+- Content collection fetching logic
+- Article/daily-log separation logic (title-based: "Activity Log" prefix for daily logs)
+- Date sorting logic
+- Build timestamp generation
+- URL construction pattern
+
+**Key Features:**
+- Build-time static generation (no runtime overhead)
+- Progressive disclosure (index → full content)
+- Includes all public content with proper header hierarchy
+- Absolute URLs for agent portability
+- Clear content separation by type (title-based filtering)
+- Header bumping (article # becomes ###, ## becomes ####, etc.)
+- File size monitoring for llms-full.txt
+- Graceful error handling for missing files
+- Smart file path resolution for date-prefixed articles
 
 ## 🧹 Skip These (Overkill for Personal Site)
 
