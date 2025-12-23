@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "prebuild": "mkdir -p public/images && cp src/content/writing/images/*.mp4 public/images/ 2>/dev/null || true",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
