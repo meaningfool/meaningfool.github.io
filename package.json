@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "dependencies": {
     "@astrojs/rss": "^4.0.12",
-    "astro": "^5.13.5"
+    "astro": "^5.13.5",
+    "remark-breaks": "^4.0.0"
   },
   "scripts": {
     "dev": "astro dev",
