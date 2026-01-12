@@ -58,22 +58,52 @@ const articleSchema = {
 
 <style>
   .article-header {
-    margin: 2rem 0;
+    margin: 4rem 0 2rem 0;
   }
 
-  h1 {
-    margin-bottom: 1rem;
+  /* Specific selector to override global styles */
+  .article-header h1 {
+    margin-bottom: 0.75rem;
+    font-size: 2.25rem;
+    line-height: 1.2;
+    position: relative;
+    text-indent: 0;
+    padding-left: 0;
+  }
+
+  /* Hanging # using absolute positioning */
+  .article-header h1::before {
+    position: absolute;
+    left: -2rem; /* Adjusted to hang in the margin */
+    content: "# ";
+    color: var(--accent);
   }
 
   .article-date {
     color: var(--muted);
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
+    font-size: 1rem;
+    margin-top: 0;
     display: block;
+    font-family: 'Poppins', sans-serif;
   }
 
   .article-content {
-    padding: 1.5rem 0 3rem 0;
+    padding: 1rem 0 4rem 0;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  /* Explicitly force Poppins on children to override global body font */
+  .article-content :global(p),
+  .article-content :global(ul),
+  .article-content :global(ol),
+  .article-content :global(li),
+  .article-content :global(blockquote) {
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .article-content :global(strong),
+  .article-content :global(b) {
+    font-weight: 500;
   }
 
   .article-content :global(h1) {
@@ -81,34 +111,82 @@ const articleSchema = {
   }
 
   .article-content :global(h2) {
-    margin: 2rem 0 1rem 0;
+    margin: 4rem 0 1.5rem 0;
+    font-size: 1.75rem;
   }
 
-  .article-content :global(h2:first-of-type) {
+  /* Smart spacing: if heading is first child, remove top margin */
+  .article-content :global(h2:first-child),
+  .article-content :global(h1 + h2),
+  .article-content :global(h3:first-child),
+  .article-content :global(h1 + h3) {
     margin-top: 0;
   }
 
   .article-content :global(h3) {
-    margin: 2rem 0 0.75rem 0;
+    margin: 3rem 0 1rem 0;
+    font-size: 1.4rem;
   }
 
   .article-content :global(h4),
   .article-content :global(h5),
   .article-content :global(h6) {
-    margin: 1rem 0 0.5rem 0;
+    margin: 2rem 0 0.75rem 0;
   }
 
   .article-content :global(p) {
-    margin: 0 0 1.25rem 0;
+    margin: 0 0 2rem 0;
+    line-height: 1.8;
+  }
+
+  /* Remove bottom margin from paragraph when followed by a list */
+  .article-content :global(p:has(+ ul)),
+  .article-content :global(p:has(+ ol)) {
+    margin-bottom: 0;
+  }
+
+  .article-content :global(ul),
+  .article-content :global(ol) {
+    margin: 0 0 2rem 0;
+  }
+
+  .article-content :global(li) {
+    margin-bottom: 0;
+    line-height: 1.8;
+  }
+
+  .article-content :global(img) {
+    margin: 3rem auto;
+    display: block;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .article-content :global(blockquote) {
+    margin: 2rem 0;
+    padding: 1.5rem 2rem;
+    background: #f9f9f9;
+    border-left: 4px solid var(--accent);
   }
 
   @media (max-width: 768px) {
     .article-header {
-      margin: 1.5rem 0;
+      margin: 2rem 0;
+      text-align: left;
+    }
+
+    /* Mobile: Reset position for smaller screens if needed, 
+       but left-align is usually preferred now */
+    .article-header h1 {
+      font-size: 1.6rem;
     }
 
     .article-content {
-      padding: 1rem 0 2rem 0;
+      padding: 0 0 2rem 0;
+    }
+    
+    .article-content :global(h2) {
+      margin-top: 3rem;
+      font-size: 1.5rem;
     }
   }
 </style>
