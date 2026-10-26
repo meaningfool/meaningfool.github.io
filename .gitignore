@@ -64,6 +64,8 @@ bun.lockb
 .private/
 document-share-keys.json
 manage-document-links.html
+portfolio-links.json
+portfolio-links.txt
 
 # CLAUDE.md (optional - uncomment if you don't want to track it)
 # CLAUDE.md

@@ -1,5 +1,6 @@
 import documents from '../data/shared-documents.json';
 import { decryptPdf, parseShareFragment } from '../lib/shared-documents.mjs';
+import { decryptDocumentGrant, documentGrantFilename, parsePortfolioSelection } from '../lib/document-grants.mjs';
 
 type SharedDocument = {
   id: string;
@@ -20,19 +21,12 @@ function element<T extends HTMLElement>(id: string): T {
 const shell = element('viewer-shell');
 const tabs = element('document-tabs');
 const panel = element('document-panel');
-const count = element('document-count');
-const title = element('document-title');
-const details = element('document-details');
-const actions = element('document-actions');
-const openLink = element<HTMLAnchorElement>('open-document');
-const downloadLink = element<HTMLAnchorElement>('download-document');
 const frame = element<HTMLIFrameElement>('pdf-frame');
 const status = element('document-status');
 const statusTitle = element('status-title');
 const statusDetail = element('status-detail');
 const spinner = element('loading-indicator');
 const retry = element<HTMLButtonElement>('retry-document');
-const hint = element('preview-hint');
 const message = element('share-message');
 const messageTitle = element('share-message-title');
 const messageDetail = element('share-message-detail');
@@ -43,22 +37,19 @@ let currentFragment: string | null = null;
 let generation = 0;
 let request = 0;
 let abort: AbortController | undefined;
+let grantAbort: AbortController | undefined;
 const objectUrls = new Map<string, string>();
 
 function clearPreview() {
   frame.hidden = true;
   frame.removeAttribute('src');
-  actions.hidden = true;
-  hint.hidden = true;
-  openLink.removeAttribute('href');
-  downloadLink.removeAttribute('href');
-  downloadLink.removeAttribute('download');
 }
 
 function releaseDocuments() {
   generation += 1;
   request += 1;
   abort?.abort();
+  grantAbort?.abort();
   clearPreview();
   objectUrls.forEach((url) => URL.revokeObjectURL(url));
   objectUrls.clear();
@@ -67,7 +58,6 @@ function releaseDocuments() {
 
 function showMessage(heading: string, detail: string) {
   shell.hidden = true;
-  count.hidden = true;
   messageTitle.textContent = heading;
   messageDetail.textContent = detail;
   message.hidden = false;
@@ -85,25 +75,13 @@ function showLoading() {
 
 function showDocument(doc: SharedDocument, url: string) {
   frame.title = doc.title;
-  frame.src = `${url}#view=FitH`;
+  frame.src = `${url}#view=FitH&navpanes=0&pagemode=none&toolbar=1`;
   frame.hidden = false;
-  openLink.href = url;
-  downloadLink.href = url;
-  downloadLink.download = doc.filename;
-  actions.hidden = false;
-  hint.hidden = false;
   status.hidden = true;
   panel.setAttribute('aria-busy', 'false');
 }
 
-function describeDocument(doc: SharedDocument) {
-  const size = doc.bytes < 1_000_000
-    ? `${Math.max(1, Math.round(doc.bytes / 1000))} KB`
-    : `${(doc.bytes / 1_000_000).toFixed(1)} MB`;
-  return `PDF · ${doc.pages} ${doc.pages === 1 ? 'page' : 'pages'} · ${size}`;
-}
-
-async function selectDocument(id: string, updateLocation = true) {
+async function selectDocument(id: string) {
   const doc = shared.find((item) => item.id === id);
   if (!doc || activeId === id) return;
 
@@ -120,15 +98,7 @@ async function selectDocument(id: string, updateLocation = true) {
     tab.tabIndex = selected ? 0 : -1;
   }
   panel.setAttribute('aria-labelledby', `document-tab-${doc.id}`);
-  title.textContent = doc.title;
-  details.textContent = describeDocument(doc);
   showLoading();
-
-  if (updateLocation) {
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', doc.id);
-    history.replaceState(null, '', url);
-  }
 
   const cached = objectUrls.get(doc.id);
   if (cached) {
@@ -199,16 +169,38 @@ function renderTabs() {
   }
 }
 
-function refreshFromLocation() {
-  if (currentFragment !== window.location.hash) {
+async function refreshFromLocation() {
+  const params = new URLSearchParams(window.location.search);
+  const identity = JSON.stringify([params.getAll('documents'), window.location.hash]);
+  if (currentFragment !== identity) {
     releaseDocuments();
     shared = [];
     tabs.replaceChildren();
-    currentFragment = window.location.hash;
+    currentFragment = identity;
+    const selectedGeneration = generation;
+    const controller = new AbortController();
+    grantAbort = controller;
+    showMessage('Opening portfolio…', 'This should only take a moment.');
 
     try {
-      shared = parseShareFragment(currentFragment, documents) as SharedDocument[];
+      if (params.has('documents')) {
+        const ids = parsePortfolioSelection(window.location.search, documents);
+        const token = window.location.hash.slice(1);
+        const filename = await documentGrantFilename(token);
+        if (selectedGeneration !== generation) return;
+        const response = await fetch(`/document-grants/${filename}`, {
+          signal: controller.signal, credentials: 'omit', referrerPolicy: 'no-referrer',
+        });
+        if (!response.ok) throw new Error('Portfolio unavailable.');
+        const capabilities = await decryptDocumentGrant(await response.arrayBuffer(), token, ids, documents);
+        if (selectedGeneration !== generation || controller.signal.aborted) return;
+        shared = capabilities as SharedDocument[];
+      } else {
+        // Keep already-shared links working while new links use one token.
+        shared = parseShareFragment(window.location.hash, documents) as SharedDocument[];
+      }
     } catch {
+      if (selectedGeneration !== generation || controller.signal.aborted) return;
       showMessage('This link is incomplete or no longer works', 'Use the complete link Josselin shared with you, or ask him for a new one.');
       return;
     }
@@ -223,8 +215,6 @@ function refreshFromLocation() {
     }
 
     renderTabs();
-    count.textContent = `${shared.length} ${shared.length === 1 ? 'document' : 'documents'}`;
-    count.hidden = false;
     message.hidden = true;
     shell.hidden = false;
   }
@@ -232,13 +222,13 @@ function refreshFromLocation() {
   if (!shared.length) return;
   const requested = new URL(window.location.href).searchParams.get('tab');
   const initial = shared.find((doc) => doc.id === requested) ?? shared[0];
-  void selectDocument(initial.id, false);
+  void selectDocument(initial.id);
 }
 
 retry.addEventListener('click', () => {
   const id = activeId;
   activeId = null;
-  if (id) void selectDocument(id, false);
+  if (id) void selectDocument(id);
 });
 element('skip-to-documents').addEventListener('click', () => element('main').focus());
 window.addEventListener('hashchange', refreshFromLocation);
