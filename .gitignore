@@ -60,5 +60,10 @@ bun.lockb
 .local/
 *.local
 
+# Document originals and access keys must never enter the public repository.
+.private/
+document-share-keys.json
+manage-document-links.html
+
 # CLAUDE.md (optional - uncomment if you don't want to track it)
 # CLAUDE.md

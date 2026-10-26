@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-src blob:; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Shared documents · Josselin Perrus</title>
+    <meta name="description" content="Documents shared with you by Josselin Perrus." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <button id="skip-to-documents" class="skip-link" type="button">Skip to documents</button>
+    <header class="page-header">
+      <a class="wordmark" href="/">meaningfool<span aria-hidden="true">.</span></a>
+      <span class="owner">Josselin Perrus</span>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">Selected work</p>
+          <h1>Shared documents</h1>
+          <p class="introduction">A closer look at my work and experience.</p>
+        </div>
+        <span id="document-count" class="document-count" hidden></span>
+      </div>
+
+      <div id="viewer-shell" hidden>
+        <div id="document-tabs" class="document-tabs" role="tablist" aria-label="Shared documents"></div>
+
+        <section id="document-panel" class="document-panel" role="tabpanel" tabindex="0" aria-busy="true">
+          <div class="document-toolbar">
+            <div class="document-summary">
+              <h2 id="document-title"></h2>
+              <p id="document-details" class="document-details"></p>
+            </div>
+            <div id="document-actions" class="document-actions" hidden>
+              <a id="open-document" target="_blank" rel="noopener noreferrer">Open PDF <span aria-hidden="true">↗</span></a>
+              <a id="download-document" class="download-link" download>Download <span aria-hidden="true">↓</span></a>
+            </div>
+          </div>
+
+          <div class="pdf-stage">
+            <iframe id="pdf-frame" title="Shared PDF" referrerpolicy="no-referrer" hidden></iframe>
+            <div id="document-status" class="document-status" role="status" aria-live="polite" aria-atomic="true">
+              <span id="loading-indicator" class="loading-indicator" aria-hidden="true"></span>
+              <h3 id="status-title">Opening document…</h3>
+              <p id="status-detail">This should only take a moment.</p>
+              <button id="retry-document" class="retry-button" type="button" hidden>Try again</button>
+            </div>
+          </div>
+          <p id="preview-hint" class="preview-hint" hidden>Preview not showing? Choose <strong>Open PDF</strong> to view it separately.</p>
+        </section>
+      </div>
+
+      <section id="share-message" class="share-message" role="status" aria-live="polite" aria-atomic="true">
+        <span class="message-mark" aria-hidden="true">↗</span>
+        <h2 id="share-message-title">Opening shared documents…</h2>
+        <p id="share-message-detail">This should only take a moment.</p>
+      </section>
+      <noscript>
+        <style is:inline>#share-message { display: none; }</style>
+        <section class="share-message">
+          <h2>Enable JavaScript to view these documents</h2>
+          <p>Then reopen the complete link Josselin shared with you.</p>
+        </section>
+      </noscript>
+      <footer class="page-footer">Anyone with this link can open these documents.</footer>
+    </main>
+
+    <script src="../scripts/document-viewer.ts"></script>
+  </body>
+</html>
+
+<style is:global>
+  @font-face {
+    font-family: 'Space Mono';
+    src: url('/fonts/space-mono-400.woff2') format('woff2');
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+  }
+
+  :root {
+    color-scheme: light;
+    font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #151515;
+    background: #fff;
+    font-synthesis: none;
+    --accent: #b64b00;
+    --line: #e5e5e2;
+    --muted: #686862;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; }
+  a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  button { font: inherit; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .skip-link { position: absolute; top: 12px; left: 16px; z-index: 5; padding: 10px 14px; border: 1px solid var(--accent); background: #fff; color: #151515; cursor: pointer; transform: translateY(-180%); }
+  .skip-link:focus { transform: translateY(0); }
+
+  .page-header, main { width: min(1440px, 100%); margin-inline: auto; padding-inline: clamp(20px, 4vw, 56px); }
+  .page-header { min-height: 84px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+  .wordmark { font-size: 22px; letter-spacing: -1.2px; text-decoration: none; }
+  .wordmark span { color: var(--accent); }
+  .owner { font-size: 12px; color: var(--muted); }
+  .page-heading { border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-block: 34px 30px; }
+  .eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 10px; text-transform: uppercase; letter-spacing: 1.6px; }
+  h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.25; font-weight: 400; letter-spacing: -1.6px; }
+  .introduction { margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+  .document-count { padding-bottom: 3px; flex-shrink: 0; color: var(--muted); font-size: 11px; }
+
+  .document-tabs { display: flex; overflow-x: auto; gap: 4px; border-bottom: 1px solid var(--line); scrollbar-width: thin; scrollbar-color: #d4d4cf transparent; padding-top: 4px; }
+  .document-tab { flex: 0 0 auto; border: 0; border-bottom: 2px solid transparent; margin: 0 0 -1px; padding: 16px 18px; color: var(--muted); background: transparent; font-size: 11px; line-height: 1.5; cursor: pointer; white-space: nowrap; transition: color 120ms, background-color 120ms; }
+  .document-tab:first-child { padding-left: 14px; }
+  .document-tab:hover { color: #151515; background: #fafaf7; }
+  .document-tab[aria-selected='true'] { border-bottom-color: var(--accent); color: #151515; background: #fff9f4; }
+  .document-tab:focus-visible { outline-offset: -4px; }
+  .document-panel { margin-top: 20px; border: 1px solid var(--line); background: #fff; }
+  .document-toolbar { min-height: 84px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 17px 22px; }
+  .document-summary { min-width: 0; }
+  .document-summary h2 { margin: 0; font-weight: 400; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+  .document-details { color: var(--muted); font-size: 10px; line-height: 1.6; margin: 4px 0 0; }
+  .document-actions { display: flex; align-items: center; gap: 24px; flex-shrink: 0; }
+  .document-actions a { display: inline-flex; align-items: center; gap: 9px; min-height: 36px; font-size: 11px; white-space: nowrap; text-decoration: none; }
+  .document-actions a:hover { color: var(--accent); }
+  .document-actions .download-link { border: 1px solid #d8d8d2; padding: 0 12px; }
+  .document-actions .download-link:hover { border-color: var(--accent); }
+  .pdf-stage { position: relative; height: max(540px, calc(100dvh - 335px)); background: #f3f3f0; border-top: 1px solid var(--line); }
+  #pdf-frame { width: 100%; height: 100%; border: 0; display: block; background: #f3f3f0; }
+  .document-status { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 40px 24px; text-align: center; }
+  .document-status h3 { margin: 20px 0 10px; font-size: 15px; line-height: 1.6; font-weight: 400; }
+  .document-status p { max-width: 48ch; margin: 0; font-size: 12px; line-height: 1.8; color: var(--muted); }
+  .loading-indicator { width: 24px; height: 24px; border: 2px solid #dddcd7; border-top-color: var(--accent); border-radius: 50%; animation: rotate 900ms linear infinite; }
+  .retry-button { margin-top: 24px; padding: 10px 16px; border: 1px solid #bcbcb5; background: #fff; color: #151515; cursor: pointer; font-size: 11px; }
+  .retry-button:hover { border-color: var(--accent); color: var(--accent); }
+  .preview-hint { border-top: 1px solid var(--line); padding: 12px 18px; margin: 0; font-size: 10px; line-height: 1.8; color: var(--muted); }
+  .preview-hint strong { font-weight: 400; color: #333; }
+
+  .share-message { border: 1px solid var(--line); background: #fafaf8; min-height: 340px; padding: 60px 24px; text-align: center; }
+  .message-mark { display: inline-block; margin-bottom: 18px; color: var(--accent); font-size: 26px; }
+  .share-message h2 { margin: 0 0 14px; font-size: clamp(16px, 2.5vw, 21px); line-height: 1.6; font-weight: 400; letter-spacing: -0.4px; }
+  .share-message p { max-width: 54ch; margin: 0 auto; color: var(--muted); font-size: 12px; line-height: 1.9; }
+  .page-footer { padding: 20px 0 30px; color: var(--muted); font-size: 10px; line-height: 1.8; }
+  @keyframes rotate { to { transform: rotate(360deg); } }
+
+  @media (max-width: 680px) {
+    .page-header { min-height: 70px; gap: 12px; }
+    .wordmark { font-size: 19px; }
+    .owner { font-size: 10px; }
+    .page-heading { display: block; padding-block: 26px 22px; }
+    .document-count { display: block; margin-top: 16px; }
+    .document-tabs { margin-inline: -4px; }
+    .document-tab { padding-inline: 13px; font-size: 10px; }
+    .document-panel { margin-top: 16px; }
+    .document-toolbar { align-items: flex-start; flex-direction: column; gap: 10px; padding: 16px; }
+    .document-summary h2 { font-size: 12px; }
+    .document-actions { width: 100%; gap: 20px; }
+    .document-actions a { min-height: 38px; }
+    .pdf-stage { height: max(440px, calc(100dvh - 360px)); }
+    .preview-hint { padding-inline: 15px; }
+    .share-message { min-height: 300px; padding-inline: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>

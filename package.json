@@ -7,6 +7,7 @@
     "remark-breaks": "^4.0.0"
   },
   "scripts": {
+    "test:documents": "node --test tests/shared-documents.test.mjs",
     "dev": "astro dev",
     "prebuild": "mkdir -p public/images && cp src/content/writing/images/*.mp4 public/images/ 2>/dev/null || true",
     "build": "astro build",

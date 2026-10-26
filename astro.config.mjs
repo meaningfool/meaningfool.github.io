@@ -8,7 +8,9 @@ export default defineConfig({
     markdown: {
         remarkPlugins: [remarkBreaks],
     },
-    integrations: [sitemap()],
+    integrations: [sitemap({
+        filter: (page) => !/^\/documents\/?$/.test(new URL(page).pathname),
+    })],
     site: 'https://meaningfool.net',
     base: '/',
     output: 'static',
