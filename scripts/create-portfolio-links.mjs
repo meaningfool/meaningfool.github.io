@@ -42,6 +42,8 @@ async function main() {
         Buffer.from(doc.key, 'base64url').toString('base64url') !== doc.key) fail('The keys file contains an invalid or duplicate document.');
     seen.add(doc.id);
   }
+  const scope = JSON.parse(await readFile(join(repository, 'src/data/portfolio-scope.json'), 'utf8'));
+  if (!Array.isArray(scope) || scope.length !== seen.size || scope.some(id => !seen.has(id))) fail('The keys file must match the full public portfolio scope.');
   const output = options['--output'];
   const root = await realpath(repository);
   if (within(resolve(repository), output) || within(root, await canonical(output))) fail('Private output must be outside the repository, including dist and symlinked paths into the repository.');
@@ -52,16 +54,12 @@ async function main() {
 
   const selections = Array.from({ length: 15 }, (_, index) => data.documents.filter((_, bit) => (index + 1) & (1 << bit)));
   selections.sort((left, right) => right.length - left.length);
-  const links = [], grants = [];
-  for (const selected of selections) {
-    const grant = await createDocumentGrant(selected.map(({ id, key }) => ({ id, key })));
-    if (!/^[a-f0-9]{64}\.bin$/.test(grant.filename)) fail('The grant generator returned an invalid filename.');
-    const path = join(publicDirectory, grant.filename);
-    if (grants.some(item => item.path === path) || await exists(path)) fail('Refusing to overwrite an existing encrypted grant.');
-    grants.push({ path, encrypted: grant.encrypted });
-    links.push({ ids: selected.map(doc => doc.id), titles: selected.map(doc => doc.title), token: grant.token, url: createPortfolioUrl(baseUrl, selected, grant.token) });
-  }
-  const text = ['PORTFOLIO SHARING LINKS', 'Keep this file private. Anyone with a link can view, save and forward its selected documents.', ''];
+  const grant = await createDocumentGrant(data.documents.map(({ id, key }) => ({ id, key })));
+  if (!/^[a-f0-9]{64}\.bin$/.test(grant.filename)) fail('The grant generator returned an invalid filename.');
+  const grantPath = join(publicDirectory, grant.filename);
+  if (await exists(grantPath)) fail('Refusing to overwrite an existing encrypted grant.');
+  const links = selections.map(selected => ({ ids: selected.map(doc => doc.id), titles: selected.map(doc => doc.title), token: grant.token, url: createPortfolioUrl(baseUrl, selected, grant.token) }));
+  const text = ['PORTFOLIO SHARING LINKS', 'Keep this file private. Every link uses the same token and grants access to all four documents. The document names only choose what is displayed.', ''];
   for (const count of [4, 3, 2, 1]) {
     text.push(`${count} DOCUMENT${count === 1 ? '' : 'S'}`, '');
     for (const link of links.filter(item => item.ids.length === count)) text.push(link.titles.join(' + '), link.url, '');
@@ -77,14 +75,14 @@ async function main() {
     await mkdir(publicDirectory, { recursive: true });
     await writeNew(privatePaths[0], `${JSON.stringify({ version: 1, links }, null, 2)}\n`, 0o600);
     await writeNew(privatePaths[1], `${text.join('\n')}\n`, 0o600);
-    for (const grant of grants) await writeNew(grant.path, grant.encrypted, 0o644);
+    await writeNew(grantPath, grant.encrypted, 0o644);
   } catch (error) {
     const cleanup = await Promise.allSettled(created.map(path => unlink(path)));
     if (cleanup.some(result => result.status === 'rejected' && result.reason.code !== 'ENOENT')) fail('Creation failed; some new output files could not be removed. Inspect the output directories before retrying.');
     throw error;
   }
-  console.log(`Created ${links.length} document-selection links.`);
-  console.log(`Public encrypted grants: ${publicDirectory}`);
+  console.log(`Created ${links.length} display selections using one portfolio token.`);
+  console.log(`Public encrypted grant: ${grantPath}`);
   for (const path of privatePaths) console.log(`Private links file: ${path}`);
 }
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { encryptPdf } from '../src/lib/shared-documents.mjs';
-import { createDocumentGrant, decryptDocumentGrant, documentGrantFilename, createPortfolioUrl, parsePortfolioSelection } from '../src/lib/document-grants.mjs';
+import { createDocumentGrant, decryptDocumentGrant, decryptPortfolioGrant, documentGrantFilename, createPortfolioUrl, parsePortfolioSelection } from '../src/lib/document-grants.mjs';
 
 const catalog = [{ id: 'ai-portfolio', title: 'AI Portfolio' }, { id: 'recommendation', title: 'Recommendation' }];
 async function capabilities() {
@@ -24,7 +24,7 @@ test('one token unlocks exactly the named selection, with readable query and fra
   assert.deepEqual((await decryptDocumentGrant(grant.encrypted, grant.token, [...ids].reverse(), catalog)).map(doc => doc.id), [...ids].reverse());
 });
 
-test('adding or removing document names invalidates a token instead of expanding access', async () => {
+test('encrypted grant scopes remain authenticated, including older selection tokens', async () => {
   const docs = await capabilities();
   const single = await createDocumentGrant([docs[0]]);
   const all = await createDocumentGrant(docs);
@@ -34,6 +34,28 @@ test('adding or removing document names invalidates a token instead of expanding
   const corrupt = single.encrypted.slice(); corrupt[20] ^= 1;
   await assert.rejects(decryptDocumentGrant(corrupt, single.token, [docs[0].id], catalog));
   await assert.rejects(decryptDocumentGrant(single.encrypted.slice(0, 30), single.token, [docs[0].id], catalog));
+});
+
+test('one portfolio token works for any nonempty subset or ordering', async () => {
+  const docs = await capabilities();
+  const scope = docs.map(doc => doc.id);
+  const grant = await createDocumentGrant(docs);
+  for (const ids of [[scope[0]], [scope[1]], scope, [...scope].reverse()]) {
+    const resolved = await decryptPortfolioGrant(grant.encrypted, grant.token, ids, catalog, scope);
+    assert.deepEqual(resolved.map(doc => doc.id), ids);
+    for (const doc of resolved) assert.equal(doc.key, docs.find(item => item.id === doc.id).key);
+    assert.equal(new URL(createPortfolioUrl('https://meaningfool.net', resolved, grant.token)).hash, '#' + grant.token);
+  }
+  const expandedCatalog = [...catalog, { id: 'future-document', title: 'Future' }];
+  assert.equal((await decryptPortfolioGrant(grant.encrypted, grant.token, [scope[0]], expandedCatalog, scope))[0].id, scope[0]);
+  await assert.rejects(decryptPortfolioGrant(grant.encrypted, grant.token, ['future-document'], expandedCatalog, scope));
+});
+
+test('earlier narrow tokens remain usable without gaining access to the whole portfolio', async () => {
+  const docs = await capabilities();
+  const grant = await createDocumentGrant([docs[0]]);
+  assert.equal((await decryptPortfolioGrant(grant.encrypted, grant.token, [docs[0].id], catalog, docs.map(doc => doc.id)))[0].key, docs[0].key);
+  await assert.rejects(decryptPortfolioGrant(grant.encrypted, grant.token, docs.map(doc => doc.id), catalog, docs.map(doc => doc.id)));
 });
 
 test('malformed tokens and ambiguous document lists are rejected', async () => {

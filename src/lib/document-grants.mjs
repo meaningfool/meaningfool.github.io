@@ -86,6 +86,26 @@ export async function decryptDocumentGrant(input, token, ids, catalog) {
   } catch { throw invalid(); }
 }
 
+/** Unlock the portfolio first; the query then selects and orders visible tabs. */
+export async function decryptPortfolioGrant(input, token, requestedIds, catalog, portfolioScope) {
+  validateIds(requestedIds);
+  let capabilities;
+  try {
+    // This scope is the immutable scope used to encrypt the existing grant,
+    // not the current catalog, which may grow without invalidating old links.
+    capabilities = await decryptDocumentGrant(input, token, portfolioScope, catalog);
+  } catch {
+    // Previously issued selection-specific tokens retain their original scope.
+    if ([...portfolioScope].sort().join(',') === [...requestedIds].sort().join(',')) throw invalid();
+    capabilities = await decryptDocumentGrant(input, token, requestedIds, catalog);
+  }
+  return requestedIds.map(id => {
+    const capability = capabilities.find(doc => doc.id === id);
+    if (!capability) throw invalid();
+    return capability;
+  });
+}
+
 export function createPortfolioUrl(base, documents, token) {
   const ids = documents.map(doc => doc.id);
   validateIds(ids);

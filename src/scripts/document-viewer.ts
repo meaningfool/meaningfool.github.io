@@ -1,6 +1,7 @@
 import documents from '../data/shared-documents.json';
+import portfolioScope from '../data/portfolio-scope.json';
 import { decryptPdf, parseShareFragment } from '../lib/shared-documents.mjs';
-import { decryptDocumentGrant, documentGrantFilename, parsePortfolioSelection } from '../lib/document-grants.mjs';
+import { decryptPortfolioGrant, documentGrantFilename, parsePortfolioSelection } from '../lib/document-grants.mjs';
 
 type SharedDocument = {
   id: string;
@@ -61,6 +62,11 @@ function showMessage(heading: string, detail: string) {
   messageTitle.textContent = heading;
   messageDetail.textContent = detail;
   message.hidden = false;
+}
+
+function showNotFound() {
+  document.documentElement.dataset.portfolioState = 'not-found';
+  document.title = '404 - Page Not Found | meaningfool';
 }
 
 function showLoading() {
@@ -177,22 +183,28 @@ async function refreshFromLocation() {
     shared = [];
     tabs.replaceChildren();
     currentFragment = identity;
+    const token = window.location.hash.slice(1);
+    if (!token) {
+      showNotFound();
+      return;
+    }
+    document.documentElement.dataset.portfolioState = 'portfolio';
+    document.title = 'Portfolio · Josselin Perrus';
     const selectedGeneration = generation;
     const controller = new AbortController();
     grantAbort = controller;
     showMessage('Opening portfolio…', 'This should only take a moment.');
 
     try {
-      if (params.has('documents')) {
-        const ids = parsePortfolioSelection(window.location.search, documents);
-        const token = window.location.hash.slice(1);
+      if (params.has('documents') || /^[A-Za-z0-9_-]{43}$/.test(token)) {
+        const ids = params.has('documents') ? parsePortfolioSelection(window.location.search, documents) : portfolioScope;
         const filename = await documentGrantFilename(token);
         if (selectedGeneration !== generation) return;
         const response = await fetch(`/document-grants/${filename}`, {
           signal: controller.signal, credentials: 'omit', referrerPolicy: 'no-referrer',
         });
         if (!response.ok) throw new Error('Portfolio unavailable.');
-        const capabilities = await decryptDocumentGrant(await response.arrayBuffer(), token, ids, documents);
+        const capabilities = await decryptPortfolioGrant(await response.arrayBuffer(), token, ids, documents, portfolioScope);
         if (selectedGeneration !== generation || controller.signal.aborted) return;
         shared = capabilities as SharedDocument[];
       } else {
@@ -201,12 +213,12 @@ async function refreshFromLocation() {
       }
     } catch {
       if (selectedGeneration !== generation || controller.signal.aborted) return;
-      showMessage('This link is incomplete or no longer works', 'Use the complete link Josselin shared with you, or ask him for a new one.');
+      showNotFound();
       return;
     }
 
     if (!shared.length) {
-      showMessage('You’ll need a shared link', 'Use the complete link Josselin shared with you to open your documents.');
+      showNotFound();
       return;
     }
     if (!window.crypto?.subtle) {

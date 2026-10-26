@@ -1,5 +1,9 @@
+---
+import NotFound from '../components/NotFound.astro';
+---
+
 <!doctype html>
-<html lang="en">
+<html lang="en" data-portfolio-state="not-found">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,52 +13,61 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-src blob:; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
-    <title>Portfolio · Josselin Perrus</title>
-    <meta name="description" content="Josselin Perrus’s portfolio. Please look at my work." />
+    <title>404 - Page Not Found | meaningfool</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style is:inline>
+      #portfolio-content { display: none; }
+      #portfolio-not-found { display: block; }
+      html[data-portfolio-state='portfolio'] #portfolio-content { display: block; }
+      html[data-portfolio-state='portfolio'] #portfolio-not-found { display: none; }
+    </style>
+    <script is:inline src="/portfolio-entry.js"></script>
   </head>
   <body>
-    <button id="skip-to-documents" class="skip-link" type="button">Skip to documents</button>
-    <header class="page-header">
-      <a class="wordmark" href="/">meaningfool<span aria-hidden="true">.</span></a>
-      <span class="owner">Josselin Perrus</span>
-    </header>
+    <div id="portfolio-not-found"><NotFound /></div>
+    <div id="portfolio-content">
+      <button id="skip-to-documents" class="skip-link" type="button">Skip to documents</button>
+      <header class="page-header">
+        <a class="wordmark" href="/">meaningfool<span aria-hidden="true">.</span></a>
+        <span class="owner">Josselin Perrus</span>
+      </header>
 
-    <main id="main" tabindex="-1">
-      <div class="page-heading">
-        <h1>Portfolio</h1>
-        <p class="introduction">Please look at my work.</p>
-      </div>
+      <main id="main" tabindex="-1">
+        <div class="page-heading">
+          <h1>Portfolio</h1>
+          <p class="introduction">Please look at my work.</p>
+        </div>
 
-      <div id="viewer-shell" hidden>
-        <div id="document-tabs" class="document-tabs" role="tablist" aria-label="Shared documents"></div>
+        <div id="viewer-shell" hidden>
+          <div id="document-tabs" class="document-tabs" role="tablist" aria-label="Shared documents"></div>
 
-        <section id="document-panel" class="document-panel" role="tabpanel" tabindex="0" aria-busy="true">
-          <div class="pdf-stage">
-            <iframe id="pdf-frame" title="Shared PDF" referrerpolicy="no-referrer" hidden></iframe>
-            <div id="document-status" class="document-status" role="status" aria-live="polite" aria-atomic="true">
-              <span id="loading-indicator" class="loading-indicator" aria-hidden="true"></span>
-              <h3 id="status-title">Opening document…</h3>
-              <p id="status-detail">This should only take a moment.</p>
-              <button id="retry-document" class="retry-button" type="button" hidden>Try again</button>
+          <section id="document-panel" class="document-panel" role="tabpanel" tabindex="0" aria-busy="true">
+            <div class="pdf-stage">
+              <iframe id="pdf-frame" title="Shared PDF" referrerpolicy="no-referrer" hidden></iframe>
+              <div id="document-status" class="document-status" role="status" aria-live="polite" aria-atomic="true">
+                <span id="loading-indicator" class="loading-indicator" aria-hidden="true"></span>
+                <h3 id="status-title">Opening document…</h3>
+                <p id="status-detail">This should only take a moment.</p>
+                <button id="retry-document" class="retry-button" type="button" hidden>Try again</button>
+              </div>
             </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
 
-      <section id="share-message" class="share-message" role="status" aria-live="polite" aria-atomic="true">
-        <span class="message-mark" aria-hidden="true">↗</span>
-        <h2 id="share-message-title">Opening shared documents…</h2>
-        <p id="share-message-detail">This should only take a moment.</p>
-      </section>
-      <noscript>
-        <style is:inline>#share-message { display: none; }</style>
-        <section class="share-message">
-          <h2>Enable JavaScript to view these documents</h2>
-          <p>Then reopen the complete link Josselin shared with you.</p>
+        <section id="share-message" class="share-message" role="status" aria-live="polite" aria-atomic="true">
+          <span class="message-mark" aria-hidden="true">↗</span>
+          <h2 id="share-message-title">Opening shared documents…</h2>
+          <p id="share-message-detail">This should only take a moment.</p>
         </section>
-      </noscript>
-    </main>
+        <noscript>
+          <style is:inline>#share-message { display: none; }</style>
+          <section class="share-message">
+            <h2>Enable JavaScript to view these documents</h2>
+            <p>Then reopen the complete link Josselin shared with you.</p>
+          </section>
+        </noscript>
+      </main>
+    </div>
 
     <script src="../scripts/document-viewer.ts"></script>
   </body>
@@ -71,10 +84,7 @@
 
   :root {
     color-scheme: light;
-    font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    color: #151515;
     background: #fff;
-    font-synthesis: none;
     --accent: #b64b00;
     --line: #e5e5e2;
     --muted: #686862;
@@ -83,21 +93,23 @@
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   body { margin: 0; }
-  a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
-  button { font: inherit; }
-  button, a { -webkit-tap-highlight-color: transparent; }
+  #portfolio-not-found { margin: 8px; }
+  #portfolio-content { font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #151515; font-synthesis: none; }
+  #portfolio-content a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  #portfolio-content button { font: inherit; }
+  #portfolio-content button, #portfolio-content a { -webkit-tap-highlight-color: transparent; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
   .skip-link { position: absolute; top: 12px; left: 16px; z-index: 5; padding: 10px 14px; border: 1px solid var(--accent); background: #fff; color: #151515; cursor: pointer; transform: translateY(-180%); }
   .skip-link:focus { transform: translateY(0); }
 
-  .page-header, main { width: min(940px, 100%); margin-inline: auto; padding-inline: clamp(16px, 3vw, 24px); }
-  main { padding-bottom: 32px; }
+  .page-header, #main { width: min(940px, 100%); margin-inline: auto; padding-inline: clamp(16px, 3vw, 24px); }
+  #main { padding-bottom: 32px; }
   .page-header { min-height: 84px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
   .wordmark { font-size: 22px; letter-spacing: -1.2px; text-decoration: none; }
   .wordmark span { color: var(--accent); }
   .owner { font-size: 12px; color: var(--muted); }
   .page-heading { border-top: 1px solid var(--line); padding-block: 30px 26px; }
-  h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.25; font-weight: 400; letter-spacing: -1.6px; }
+  .page-heading h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.25; font-weight: 400; letter-spacing: -1.6px; }
   .introduction { margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
 
   .document-tabs { display: flex; overflow-x: auto; gap: 4px; border-bottom: 1px solid var(--line); scrollbar-width: thin; scrollbar-color: #d4d4cf transparent; padding-top: 4px; }
