@@ -24,16 +24,16 @@ All public content including articles and daily logs. Professional insights and 
 
 ### Articles
 ${articles.map(article =>
-  `- [${article.data.title}](https://meaningfool.net/articles/${article.id})`
+  `- [${article.data.title}](https://meaningfool.net/articles/${article.id}/)`
 ).join('\n') || 'No articles yet'}
 
 ### Daily Logs
 ${dailyLogs.map(log =>
-  `- [${log.data.title}](https://meaningfool.net/articles/${log.id})`
+  `- [${log.data.title}](https://meaningfool.net/articles/${log.id}/)`
 ).join('\n') || 'No daily logs yet'}
 
 ## Pages
-- [About](https://meaningfool.net/about)
+- [About](https://meaningfool.net/about/)
 - [Home](https://meaningfool.net/)
 - [RSS Feed](https://meaningfool.net/rss.xml)
 
