@@ -61,7 +61,7 @@ Personal website of Josselin Perrus, product manager in Paris.
         });
 
         fullContent += `### ${article.data.title}
-**URL**: https://meaningfool.net/articles/${article.id}
+**URL**: https://meaningfool.net/articles/${article.id}/
 **Date**: ${article.data.date.toISOString().split('T')[0]}
 **Type**: Article
 
@@ -100,7 +100,7 @@ ${content}
       });
 
       fullContent += `### ${log.data.title}
-**URL**: https://meaningfool.net/articles/${log.id}
+**URL**: https://meaningfool.net/articles/${log.id}/
 **Date**: ${log.data.date.toISOString().split('T')[0]}
 **Type**: Daily Log
 

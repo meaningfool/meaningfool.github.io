@@ -14,7 +14,7 @@ export default defineConfig({
     site: 'https://meaningfool.net',
     base: '/',
     output: 'static',
-    trailingSlash: 'never', // Consistent URL format
+    trailingSlash: 'always', // Matches GitHub Pages, which redirects /page to /page/
     vite: {
         resolve: {
             preserveSymlinks: true
