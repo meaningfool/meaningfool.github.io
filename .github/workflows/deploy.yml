@@ -38,7 +38,7 @@ jobs:
           # node-version: 20
           
           # The package manager that should be used to install dependencies and build your site.
-          package-manager: bun@latest
+          package-manager: bun@1.4.4
 
   deploy:
     needs: build
