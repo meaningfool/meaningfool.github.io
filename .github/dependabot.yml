@@ -1,0 +1,18 @@
+version: 2
+updates:
+  # Minor and patch updates arrive as one monthly PR; major versions get their own PRs.
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
