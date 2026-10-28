@@ -4,6 +4,8 @@ on:
   # Trigger the workflow every time you push to the `main` branch
   push:
     branches: [ main ]
+  # Build pull requests, including Dependabot updates, without deploying them.
+  pull_request:
   # Allows you to run this workflow manually from the Actions tab on GitHub.
   workflow_dispatch:
 
@@ -13,40 +15,35 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout your repository using git
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
-      
+
       - name: Install, build, and upload your site
-        uses: withastro/action@v3
+        uses: withastro/action@v6
         with:
-          # The root location of your Astro project inside the repository. (optional)
-          # path: .
-          
-          # The specific version of Node that should be used to build your site. (optional)
-          # node-version: 20
-          
-          # The package manager that should be used to install dependencies and build your site.
+          node-version: 24
           package-manager: bun@1.4.4
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
+    # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+    # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+    # Set on this job so pull request builds never take the place of a queued deployment.
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
