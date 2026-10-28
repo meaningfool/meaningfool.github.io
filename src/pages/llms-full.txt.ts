@@ -1,5 +1,6 @@
 import { getCollection } from "astro:content";
 import type { APIRoute } from "astro";
+import { newestFirst } from "../lib/sort-posts";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -11,10 +12,10 @@ export const GET: APIRoute = async () => {
 
   // Reuse separation logic from llms.txt (title-based filtering)
   const dailyLogs = allContent.filter(item => item.data.title.startsWith('Activity Log'))
-    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+    .sort(newestFirst);
 
   const articles = allContent.filter(item => !item.data.title.startsWith('Activity Log'))
-    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+    .sort(newestFirst);
 
   // Build full content with markdown
   let fullContent = `# meaningfool - Full Content
