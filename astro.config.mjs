@@ -17,6 +17,7 @@ export default defineConfig({
     site: 'https://meaningfool.net',
     base: '/',
     output: 'static',
+    compressHTML: true, // Astro 7 defaults to 'jsx', which drops whitespace between inline elements
     trailingSlash: 'always', // Matches GitHub Pages, which redirects /page to /page/
     vite: {
         resolve: {
