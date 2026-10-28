@@ -4,11 +4,12 @@ import Layout from '../layouts/Layout.astro';
 import ArticlesList from '../components/ArticlesList.astro';
 import JsonLd from '../components/JsonLd.astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { newestFirst } from '../lib/sort-posts';
 
 const articles: CollectionEntry<'writing'>[] = await getCollection('writing');
 
 // Sort articles by date (most recent first)
-const sortedArticles = articles.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const sortedArticles = articles.sort(newestFirst);
 
 // JSON-LD structured data for WebSite
 const websiteSchema = {

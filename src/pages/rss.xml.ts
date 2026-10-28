@@ -1,14 +1,12 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
+import { newestFirst } from '../lib/sort-posts';
 
 export async function GET(context: APIContext) {
   const articles = await getCollection('writing');
 
-  // Sort articles by date (newest first)
-  const sortedArticles = articles.sort((a, b) =>
-    b.data.date.getTime() - a.data.date.getTime()
-  );
+  const sortedArticles = articles.sort(newestFirst);
 
   return rss({
     title: 'meaningfool',

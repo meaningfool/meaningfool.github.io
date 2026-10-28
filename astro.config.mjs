@@ -1,12 +1,15 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import { unified } from '@astrojs/markdown-remark';
 import remarkBreaks from 'remark-breaks';
 
 // https://astro.build/config
 export default defineConfig({
     markdown: {
-        remarkPlugins: [remarkBreaks],
+        processor: unified({
+            remarkPlugins: [remarkBreaks],
+        }),
     },
     integrations: [sitemap({
         filter: (page) => !/^\/documents\/?$/.test(new URL(page).pathname),
