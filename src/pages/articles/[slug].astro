@@ -18,16 +18,22 @@ const { Content } = await render(article);
 
 // JSON-LD structured data for BlogPosting
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+const author = {
+  "@type": "Person",
+  "name": "Josselin Perrus",
+  "url": new URL('/about/', Astro.site).toString()
+};
 const articleSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
   "headline": article.data.title,
   "description": article.data.description || article.data.title,
-  "author": {
-    "@type": "Person",
-    "name": "Josselin Perrus"
-  },
+  "image": new URL('/og-default.jpg', Astro.site).toString(),
+  "author": author,
+  "publisher": author,
   "datePublished": article.data.date.toISOString(),
+  "dateModified": (article.data.updated ?? article.data.date).toISOString(),
+  "mainEntityOfPage": { "@type": "WebPage", "@id": canonical },
   "url": canonical
 };
 ---
@@ -43,7 +49,7 @@ const articleSchema = {
     <article>
       <header class="article-header">
         <h1>{article.data.title}</h1>
-        <time class="article-date">{article.data.date.toLocaleDateString('en-US', { 
+        <time class="article-date" datetime={article.data.date.toISOString().slice(0, 10)}>{article.data.date.toLocaleDateString('en-US', {
           year: 'numeric', 
           month: 'long', 
           day: 'numeric' 
