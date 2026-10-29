@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+# Encrypted document files; the /documents/ page itself stays crawlable so its noindex is seen.
+Disallow: /shared-documents/
+Disallow: /document-grants/
 
 Sitemap: https://meaningfool.net/sitemap-index.xml
