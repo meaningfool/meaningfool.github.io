@@ -1,6 +1,6 @@
 // Cloudflare Workers answers /page with a temporary (307) redirect to /page/.
 // Search engines treat that as a weak signal, so list every page in dist/_redirects
-// with a permanent (301) redirect instead, as GitHub Pages sends.
+// with a permanent (301) redirect instead.
 import { readdir, writeFile } from 'node:fs/promises';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
