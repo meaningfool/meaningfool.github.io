@@ -10,6 +10,11 @@ export function postId(entry) {
   return entry.startsWith('articles/') ? id.replace(/^\d{4}-\d{2}-\d{2}-/, '') : id;
 }
 
+/** Activity logs live in `daily-logs/`; every other entry in the collection is an article. */
+export function isDailyLog(entry) {
+  return /(^|\/)daily-logs\//.test(entry.filePath ?? '');
+}
+
 /** Map each post's URL path to its frontmatter `updated` date, or `date` when it has none. */
 export function postLastModified(contentDir) {
   const dates = new Map();
