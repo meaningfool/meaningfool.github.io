@@ -7,3 +7,9 @@
   Content-Type: text/plain; charset=utf-8
 /robots.txt
   Content-Type: text/plain; charset=utf-8
+
+# Web Analytics' automatic setup adds its beacon to every page, but /documents/
+# links carry a private access token: no-transform tells Cloudflare not to add it.
+# The rest is Cloudflare's default for pages.
+/documents/*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
