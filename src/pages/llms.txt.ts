@@ -1,6 +1,7 @@
 import { getCollection } from "astro:content";
 import type { APIRoute } from "astro";
 import { newestFirst } from "../lib/sort-posts";
+import { isDailyLog } from "../lib/posts.mjs";
 
 export const prerender = true; // Static generation at build time
 
@@ -8,12 +9,8 @@ export const GET: APIRoute = async () => {
   const allContent = await getCollection("writing");
   const buildTime = new Date().toISOString();
 
-  // Shared logic: Separate articles and daily logs based on title pattern
-  const dailyLogs = allContent.filter(item => item.data.title.startsWith('Activity Log'))
-    .sort(newestFirst);
-
-  const articles = allContent.filter(item => !item.data.title.startsWith('Activity Log'))
-    .sort(newestFirst);
+  const dailyLogs = allContent.filter(isDailyLog).sort(newestFirst);
+  const articles = allContent.filter((entry) => !isDailyLog(entry)).sort(newestFirst);
 
   const content = `# meaningfool
 > Personal website of Josselin Perrus, product manager in Paris. Generated: ${buildTime}

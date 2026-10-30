@@ -1,46 +1,26 @@
-# Astro Starter Kit: Basics
+# meaningfool.net
+
+Source of [meaningfool.net](https://meaningfool.net), Josselin Perrus's personal site, with writing about product and AI-assisted programming.
+
+It is an [Astro](https://astro.build) static site deployed to GitHub Pages. The articles live in a separate repository, [meaningfool-writing](https://github.com/meaningfool/meaningfool-writing), included here as a git submodule at `src/content/writing/`.
+
+## Run it locally
+
+Requires Node 24 and Bun.
 
 ```sh
-bun create astro@latest -- --template basics
+git clone --recurse-submodules https://github.com/meaningfool/meaningfool.github.io
+cd meaningfool.github.io
+git submodule update --remote   # fetch the latest content
+bun install
+bun dev                         # http://localhost:4321
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+`bun run build` writes the production site to `dist/`, and `bun run test:documents` runs the tests for the document-sharing code.
 
-## 🚀 Project Structure
+## Publishing
 
-Inside of your Astro project, you'll see the following folders and files:
+- **Code:** merging a pull request into `main` deploys the site.
+- **Content:** pushing published content to meaningfool-writing's `main` deploys it too. Every deploy builds the latest content.
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
-
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `bun install`             | Installs dependencies                            |
-| `bun dev`             | Starts local dev server at `localhost:4321`      |
-| `bun build`           | Build your production site to `./dist/`          |
-| `bun preview`         | Preview your build locally, before deploying     |
-| `bun astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `bun astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+[`AGENTS.md`](AGENTS.md) holds the working notes for coding agents, and [`docs/document-sharing.md`](docs/document-sharing.md) explains the encrypted portfolio links.
