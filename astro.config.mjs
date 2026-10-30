@@ -25,7 +25,7 @@ export default defineConfig({
     base: '/',
     output: 'static',
     compressHTML: true, // Astro 7 defaults to 'jsx', which drops whitespace between inline elements
-    trailingSlash: 'always', // Matches GitHub Pages, which redirects /page to /page/
+    trailingSlash: 'always', // Pages live at /page/; dist/_redirects sends /page there with a 301
     vite: {
         resolve: {
             preserveSymlinks: true

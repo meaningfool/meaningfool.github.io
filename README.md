@@ -2,7 +2,7 @@
 
 Source of [meaningfool.net](https://meaningfool.net), Josselin Perrus's personal site, with writing about product and AI-assisted programming.
 
-It is an [Astro](https://astro.build) static site deployed to GitHub Pages. The articles live in a separate repository, [meaningfool-writing](https://github.com/meaningfool/meaningfool-writing), included here as a git submodule at `src/content/writing/`.
+It is an [Astro](https://astro.build) static site served by [Cloudflare Workers](https://developers.cloudflare.com/workers/static-assets/). The articles live in a separate repository, [meaningfool-writing](https://github.com/meaningfool/meaningfool-writing), included here as a git submodule at `src/content/writing/`.
 
 ## Run it locally
 

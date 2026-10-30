@@ -1,6 +1,6 @@
 # Cloudflare Workers reads this file; it isn't served there.
 # Cloudflare sends text files as plain text/plain, and browsers then decode the
-# emoji and accents in llms-full.txt as Windows-1252. GitHub Pages adds the charset.
+# emoji and accents in llms-full.txt as Windows-1252, so add the charset.
 /llms.txt
   Content-Type: text/plain; charset=utf-8
 /llms-full.txt

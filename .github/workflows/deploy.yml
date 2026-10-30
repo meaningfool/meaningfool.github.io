@@ -10,16 +10,14 @@ on:
   # meaningfool-writing also starts it this way when published content changes.
   workflow_dispatch:
 
-# Allow this job to clone the repo and create a page deployment
+# Clone the repository. Deploys authenticate to Cloudflare with the secrets below.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Runs on main also deploy to Cloudflare, so they go one at a time. Pull requests
+    # Runs on main deploy to Cloudflare, so they go one at a time. Pull requests
     # use a group of their own, so they never take the place of a queued deployment.
     concurrency:
       group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'cloudflare' }}
@@ -33,14 +31,15 @@ jobs:
       - name: Fetch the latest content
         run: git submodule update --init --remote --depth 1 src/content/writing
 
-      - name: Install, build, and upload your site
+      # withastro/action sets up Node and Bun, keeps Astro's image cache between
+      # runs, and builds dist/. It also uploads a GitHub Pages artifact, which
+      # nothing uses since the site moved to Cloudflare (#15).
+      - name: Install and build the site
         uses: withastro/action@v6
         with:
           node-version: 24
           package-manager: bun@1.4.4
 
-      # While meaningfool.net moves from GitHub Pages to Cloudflare Workers (#15),
-      # the same build goes to both. Pull requests only check the Cloudflare deploy.
       - name: Check the Cloudflare deploy
         if: github.event_name == 'pull_request'
         run: bunx wrangler deploy --dry-run
@@ -51,21 +50,3 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-  deploy:
-    if: github.event_name != 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
-    # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-    # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-    # Set on this job so pull request builds never take the place of a queued deployment.
-    concurrency:
-      group: "pages"
-      cancel-in-progress: false
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5

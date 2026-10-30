@@ -34,7 +34,7 @@ The script adds one encrypted grant file to the website:
 public/document-grants/<sha256-of-token>.bin
 ```
 
-The grant contains all four document keys in encrypted form. Its filename is a hash of the random token, not the token itself. Existing encrypted PDFs in `public/shared-documents/` and their public metadata remain unchanged. The encrypted assets, public portfolio scope and viewer source can be committed and deployed through the site's normal GitHub Pages process. No backend server is required.
+The grant contains all four document keys in encrypted form. Its filename is a hash of the random token, not the token itself. Existing encrypted PDFs in `public/shared-documents/` and their public metadata remain unchanged. The encrypted assets, public portfolio scope and viewer source can be committed and deployed through the site's normal deploy to Cloudflare. No backend server is required.
 
 The following outputs stay in the external private directory, with filesystem mode `0600`:
 
@@ -56,7 +56,7 @@ npm run build
 
 Deploy the encrypted grant with the viewer, then verify that the same token works with a one-document query, multiple names in a different order, and no `documents` parameter. Confirm that the tabs show the named PDFs in query order and default to all four when the parameter is absent.
 
-A missing or invalid token displays a client-side 404 view. The initial HTTP response still has status 200 on GitHub Pages: the token is in the fragment and is never sent to the server, so a static host cannot check it before serving the page.
+A missing or invalid token displays a client-side 404 view. The initial HTTP response still has status 200: the token is in the fragment and is never sent to the server, so a static host cannot check it before serving the page.
 
 Anyone with a current portfolio link can view, save and forward all four documents, regardless of its current query. The token remains available to page JavaScript, browser history and anyone who receives the full link. Keep the viewer free of third-party scripts that should not receive it.
 
