@@ -11,8 +11,12 @@ export default {
     const range = request.headers.get('Range');
     if (request.method !== 'GET' || !range) return acceptRanges(asset);
 
-    const body = await asset.arrayBuffer();
-    const size = body.byteLength;
+    // Stream the requested bytes instead of loading the file into memory, so large
+    // videos stay within the Worker's CPU and memory limits. Without a size, read
+    // the file to measure it.
+    const length = asset.headers.get('Content-Length');
+    const file = length === null ? new Uint8Array(await asset.arrayBuffer()) : null;
+    const size = file ? file.byteLength : Number(length);
     const bounds = parseRange(range, size);
     if (!bounds) {
       return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
@@ -21,8 +25,13 @@ export default {
     const headers = new Headers(asset.headers);
     headers.set('Accept-Ranges', 'bytes');
     headers.set('Content-Range', `bytes ${start}-${end}/${size}`);
-    headers.set('Content-Length', String(end - start + 1));
-    return new Response(body.slice(start, end + 1), { status: 206, headers });
+    headers.delete('Content-Length');
+    if (file) return new Response(file.slice(start, end + 1), { status: 206, headers });
+
+    // FixedLengthStream, from the Workers runtime, sends the Content-Length.
+    const { readable, writable } = new FixedLengthStream(end - start + 1);
+    asset.body.pipeThrough(byteRange(start, end)).pipeTo(writable);
+    return new Response(readable, { status: 206, headers });
   },
 };
 
@@ -40,4 +49,19 @@ function parseRange(header, size) {
     ? [Math.max(size - Number(match[2]), 0), size - 1]
     : [Number(match[1]), match[2] === '' ? size - 1 : Math.min(Number(match[2]), size - 1)];
   return start <= end && start < size ? [start, end] : null;
+}
+
+/** Passes on bytes start to end (inclusive) of a byte stream, then stops reading it. */
+function byteRange(start, end) {
+  let offset = 0;
+  return new TransformStream({
+    transform(chunk, controller) {
+      const chunkStart = offset;
+      offset += chunk.byteLength;
+      const from = Math.max(start - chunkStart, 0);
+      const to = Math.min(end + 1 - chunkStart, chunk.byteLength);
+      if (from < to) controller.enqueue(chunk.subarray(from, to));
+      if (offset > end) controller.terminate();
+    },
+  });
 }
