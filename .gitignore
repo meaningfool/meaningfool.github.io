@@ -69,3 +69,6 @@ portfolio-links.txt
 
 # Screenshots left by browser automation tools
 .playwright-mcp/
+
+# Cloudflare Wrangler local state
+.wrangler/

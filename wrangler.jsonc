@@ -1,0 +1,14 @@
+// Cloudflare Workers serves the static build in dist/. There is no Worker code.
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "meaningfool",
+	"compatibility_date": "2026-10-19",
+	"assets": {
+		"directory": "./dist",
+		// Unknown URLs get dist/404.html with a 404 status.
+		"not_found_handling": "404-page",
+		// Pages live at /page/ (dist/page/index.html). The permanent /page -> /page/
+		// redirects come from dist/_redirects, which the build writes.
+		"html_handling": "auto-trailing-slash"
+	}
+}

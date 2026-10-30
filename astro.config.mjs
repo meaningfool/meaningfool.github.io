@@ -5,6 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import { unified } from '@astrojs/markdown-remark';
 import remarkBreaks from 'remark-breaks';
 import remarkDropTitle from './src/lib/remark-drop-title.mjs';
+import trailingSlashRedirects from './src/lib/trailing-slash-redirects.mjs';
 import { postLastModified } from './src/lib/posts.mjs';
 
 const lastModified = postLastModified(fileURLToPath(new URL('./src/content/writing', import.meta.url)));
@@ -19,7 +20,7 @@ export default defineConfig({
     integrations: [sitemap({
         filter: (page) => !/^\/documents\/?$/.test(new URL(page).pathname),
         serialize: (item) => ({ ...item, lastmod: lastModified.get(new URL(item.url).pathname) }),
-    })],
+    }), trailingSlashRedirects()],
     site: 'https://meaningfool.net',
     base: '/',
     output: 'static',
