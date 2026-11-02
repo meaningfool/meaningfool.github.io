@@ -1,4 +1,20 @@
 # Cloudflare Workers reads this file; it isn't served there.
+
+# Every response from the site. The Content-Security-Policy only reports for now:
+# it lists what pages load (Google Fonts, YouTube embeds, outside images and
+# Cloudflare's analytics beacon, which reports to /cdn-cgi/rum on this domain).
+# Inline styles stay allowed because code highlighting uses style attributes.
+/*
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self'; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+
+# Fingerprinted build files: their names change whenever their content does.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # Cloudflare sends text files as plain text/plain, and browsers then decode the
 # emoji and accents in llms-full.txt as Windows-1252, so add the charset.
 /llms.txt
@@ -10,6 +26,8 @@
 
 # Web Analytics' automatic setup adds its beacon to every page, but /documents/
 # links carry a private access token: no-transform tells Cloudflare not to add it.
-# The rest is Cloudflare's default for pages.
+# The rest is Cloudflare's default for pages. The page sets its own stricter
+# Content-Security-Policy, so it doesn't get the site-wide one.
 /documents/*
   Cache-Control: public, max-age=0, must-revalidate, no-transform
+  ! Content-Security-Policy-Report-Only
