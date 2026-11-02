@@ -28,7 +28,8 @@ Commit and push content in the submodule's own repository, meaningfool-writing, 
 
 ## Deploys
 
-- `.github/workflows/deploy.yml` builds every push to `main` and deploys it with `wrangler deploy`. Pull requests are built and checked with `wrangler deploy --dry-run`, but not deployed.
+- `.github/workflows/deploy.yml` builds every push to `main` and deploys it with `wrangler deploy`.
+- Pull requests get a preview instead: `wrangler versions upload` publishes the build at `https://pr-<number>-meaningfool.josselin-perrus.workers.dev` without touching production, and a bot comment on the PR links it. Previews send `X-Robots-Tag: noindex`. Dependabot and fork pull requests don't get the Cloudflare secrets, so they only run `wrangler deploy --dry-run`.
 - To redeploy without a change, run that workflow manually, for example `gh workflow run deploy.yml -R meaningfool/meaningfool.github.io`.
 - The latest deploy is also served at https://meaningfool.josselin-perrus.workers.dev.
 - Cloudflare serves files of up to 25 MiB; a bigger file makes the deploy fail.

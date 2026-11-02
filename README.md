@@ -20,7 +20,7 @@ bun dev                         # http://localhost:4321
 
 ## Publishing
 
-- **Code:** merging a pull request into `main` deploys the site.
+- **Code:** each pull request gets a preview link in a comment, and merging it into `main` deploys the site.
 - **Content:** pushing published content to meaningfool-writing's `main` deploys it too. Every deploy builds the latest content.
 
 [`AGENTS.md`](AGENTS.md) holds the working notes for coding agents, and [`docs/document-sharing.md`](docs/document-sharing.md) explains the encrypted portfolio links.
