@@ -10,9 +10,11 @@ on:
   # meaningfool-writing also starts it this way when published content changes.
   workflow_dispatch:
 
-# Clone the repository. Deploys authenticate to Cloudflare with the secrets below.
+# Clone the repository and comment preview links on pull requests. Deploys
+# authenticate to Cloudflare with the secrets below.
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   build:
@@ -40,9 +42,31 @@ jobs:
           node-version: 24
           package-manager: bun@1.4.4
 
-      - name: Check the Cloudflare deploy
+      # Pull requests upload a preview version, which leaves production alone, and
+      # link it on the PR. Dependabot and forks don't get the Cloudflare secrets,
+      # so their pull requests only check the deploy.
+      - name: Upload a preview
         if: github.event_name == 'pull_request'
-        run: bunx wrangler deploy --dry-run
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            bunx wrangler deploy --dry-run
+            exit 0
+          fi
+          # Keep previews out of search engines. Only this upload gets the header.
+          printf '\n/*\n  X-Robots-Tag: noindex\n' >> dist/_headers
+          bunx wrangler versions upload --preview-alias "pr-$PR" --message "PR #$PR at ${SHA:0:7}" | tee upload.log
+          url=$(grep -o "https://pr-$PR-[^ ]*\.workers\.dev" upload.log | head -1)
+          [ -n "$url" ] || { echo "::error::wrangler printed no preview URL"; exit 1; }
+          body="**Preview:** $url"$'\n\n'"Built from ${SHA:0:7} with the latest content. The link stays the same and shows the latest push. Search engines are asked not to index it."
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" ||
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$body"
 
       - name: Deploy to Cloudflare Workers
         if: github.event_name != 'pull_request'
