@@ -1,6 +1,6 @@
-/* The content styles of the pages from before the redesign, kept until each page is rebuilt: the home (#31), the
-   article page (#32) and About (#33). They apply inside an element with the legacy class, which those pages give their
-   <main>. Rebuilding a page drops the class, and the last one deletes this file.
+/* The content styles of the pages from before the redesign, kept until each page is rebuilt: the home (#31) and About
+   (#33); the article page (#32) has been. They apply inside an element with the legacy class, which those pages give
+   their <main>. Rebuilding a page drops the class, and the last one deletes this file.
 
    Only the fonts, the weights and the colours changed with the redesign's foundations (#29). :where() gives each rule
    the specificity it had as a global rule, so the pages' own styles still win where they did. */

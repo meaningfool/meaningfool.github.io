@@ -1,0 +1,74 @@
+---
+// Previous and Next at the end of a post: the older post on the left, the newer one on the right.
+import type { CollectionEntry } from 'astro:content';
+
+type Post = CollectionEntry<'writing'>;
+
+interface Props {
+	previous?: Post;
+	next?: Post;
+}
+
+const { previous, next } = Astro.props;
+const links = [
+	{ post: previous, label: '← Previous', rel: 'prev' },
+	{ post: next, label: 'Next →', rel: 'next' },
+];
+---
+
+{(previous || next) && (
+	<nav class="prevnext" aria-label="Previous and next">
+		{links.map(({ post, label, rel }) => (
+			<div>
+				{post && (
+					<a href={`/articles/${post.id}/`} rel={rel}>
+						<small>{label}</small>
+						<span>{post.data.title}</span>
+					</a>
+				)}
+			</div>
+		))}
+	</nav>
+)}
+
+<style>
+	.prevnext {
+		display: flex;
+		gap: 24px;
+		padding-top: 20px;
+		border-top: 1px solid var(--line);
+	}
+
+	.prevnext > div {
+		flex: 1 1 0;
+	}
+
+	.prevnext > div:last-child {
+		text-align: right;
+	}
+
+	a {
+		display: grid;
+		gap: 6px;
+		align-content: start;
+		color: var(--ink);
+		text-decoration: none;
+	}
+
+	small {
+		font-size: 12px;
+		line-height: 18px;
+		letter-spacing: 0.04em;
+		color: var(--muted);
+	}
+
+	span {
+		font-size: 15px;
+		line-height: 22px;
+	}
+
+	a:hover span {
+		text-decoration: underline;
+		text-decoration-color: var(--accent);
+	}
+</style>
