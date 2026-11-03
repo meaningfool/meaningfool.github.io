@@ -148,7 +148,9 @@ const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.
 	const CONTRAST = 15 * 0.72 ** 1.5;
 	// The shader's grain (0.15) thins the dots in specks finer than a pixel: by 0.15 x 0.285 = 4.3% on average.
 	const GRAIN = 1 - 0.15 * 0.285;
-	const pixelRatio = () => Math.min(3, window.devicePixelRatio || 1);
+	// Like the shader, draw at twice the CSS pixels or more, up to 3x: on a 1x canvas the dots smaller than a pixel lose
+	// some of their ink, and the map came out 8% lighter.
+	const pixelRatio = () => Math.min(3, Math.max(2, window.devicePixelRatio || 1));
 
 	type MapData = { grey: Uint8Array; w: number; h: number; mask: HTMLCanvasElement };
 	let loading: Promise<MapData> | null = null;
@@ -205,8 +207,8 @@ const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.
 		canvas.height = Math.round(h * dpr);
 		const g = canvas.getContext('2d')!;
 		g.setTransform(dpr, 0, 0, dpr, 0, 0);
-		// The shader draws at 2x or more; its edges are about one of its pixels wide.
-		const aa = 4 / Math.PI / Math.max(2, dpr);
+		// The shader draws at this resolution too; its edges are about one of its pixels wide.
+		const aa = 4 / Math.PI / dpr;
 		const cols = Math.ceil(w / 2 / PITCH) + 1;
 		const rows = Math.ceil(h / 2 / PITCH) + 1;
 		g.fillStyle = COLOR;
