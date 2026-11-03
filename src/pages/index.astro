@@ -95,8 +95,8 @@ const websiteSchema = {
 
 			<section class="sec" id="writing" aria-labelledby="writing-title">
 				<div class="sec-head">
-					<h2 id="writing-title">Writing</h2>
-					<p class="label count" data-writing-count data-all={allText} data-names={JSON.stringify(TOPIC_NAMES)} aria-live="polite" tabindex="-1">
+					<h2 id="writing-title" tabindex="-1">Writing</h2>
+					<p class="label count" data-writing-count data-all={allText} data-names={JSON.stringify(TOPIC_NAMES)} aria-live="polite">
 						{allText}
 					</p>
 				</div>
@@ -370,7 +370,8 @@ const websiteSchema = {
 			all.dataset.showAll = '';
 			all.textContent = 'Show all';
 			count.replaceChildren(`${names[topic] ?? topic} · ${shown} of ${items.length} · `, all);
-		} else {
+		} else if (count.childElementCount || count.textContent?.trim() !== count.dataset.all) {
+			// Only when it changed: the count is a live region, which screen readers announce when it's rewritten.
 			count.textContent = count.dataset.all ?? '';
 		}
 	}
@@ -380,8 +381,9 @@ const websiteSchema = {
 		if (!page) return;
 		// On the home a dot filters Writing; it never follows a link, should the map have come from another page.
 		event.preventDefault();
+		const map = event.target as HTMLElement;
 		const { topic } = (event as CustomEvent<{ topic: string }>).detail;
-		show(page, (event.target as HTMLElement).dataset.picked === topic ? null : topic);
+		show({ ...page, map }, map.dataset.picked === topic ? null : topic);
 	});
 
 	document.addEventListener('click', (event) => {
@@ -390,8 +392,8 @@ const websiteSchema = {
 		if (!page) return;
 		const hadFocus = document.activeElement === button;
 		show(page, null);
-		// The button is gone: keep the keyboard's place on the count that replaced it.
-		if (hadFocus) page.count.focus();
+		// The button is gone: keep the keyboard's place in Writing, on its heading.
+		if (hadFocus) document.getElementById('writing-title')?.focus();
 	});
 
 	// Arriving on the home, by a page load or a ClientRouter swap: all the articles, and no pick.
