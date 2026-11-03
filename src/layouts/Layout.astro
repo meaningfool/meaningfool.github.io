@@ -2,15 +2,18 @@
 import '../styles/global.css';
 import '../styles/legacy.css';
 import Frame from '../components/Frame.astro';
+import Favicons from '../components/Favicons.astro';
 import monoFont from '../fonts/dejavu-sans-mono.woff2?url';
+import { SITE_SHARE, type Share } from '../lib/share';
 
-// Accept props for meta tags
+// Accept props for meta tags. `share` is the page's share image, the site's unless it has its own.
 const {
   title = 'meaningfool',
   description = 'Personal site of Josselin Perrus, product manager in Paris',
-  ogImage = new URL('/og-default.jpg', Astro.site).toString(),
+  share = SITE_SHARE as Share,
   type = 'website'
 } = Astro.props;
+const ogImage = new URL(share.path, Astro.site).toString();
 
 // Use Astro's built-in URL handling for canonical URLs
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -22,7 +25,7 @@ const canonical = canonicalURL.toString();
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<Favicons />
 
 		<title>{title}</title>
 		<meta name="description" content={description} />
@@ -35,6 +38,9 @@ const canonical = canonicalURL.toString();
 		<meta property="og:url" content={canonical} />
 		<meta property="og:site_name" content="meaningfool" />
 		<meta property="og:image" content={ogImage} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content={share.alt} />
 
 		<!-- Twitter Cards -->
 		<meta name="twitter:card" content="summary_large_image" />
@@ -43,6 +49,7 @@ const canonical = canonicalURL.toString();
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:image" content={ogImage} />
+		<meta name="twitter:image:alt" content={share.alt} />
 
 		<!-- RSS Feed -->
 		<link rel="alternate" type="application/rss+xml" title="meaningfool" href="/rss.xml">

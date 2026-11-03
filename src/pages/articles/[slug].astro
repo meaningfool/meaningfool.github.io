@@ -11,7 +11,7 @@ import PrevNext from '../../components/PrevNext.astro';
 import { projects, projectOf } from '../../data/projects';
 import { isDailyLog } from '../../lib/posts.mjs';
 import { newestFirst } from '../../lib/sort-posts';
-import { readingMinutes } from '../../lib/reading-time.mjs';
+import { articleMeta, postShare } from '../../lib/share';
 import { excerpt } from '../../lib/excerpt';
 import '../../styles/prose.css';
 
@@ -45,9 +45,11 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 const { article, previous, next } = Astro.props;
 const { Content } = await render(article);
+const share = postShare(article);
 
 const project = projectOf(article.id);
-const minutes = readingMinutes(article.body ?? '');
+// The date and reading time as the share image prints them
+const { date: dateText, minutes } = articleMeta(article);
 const description = article.data.description || excerpt(article.rendered?.html ?? '') || article.data.title;
 const date = article.data.date;
 
@@ -63,7 +65,7 @@ const articleSchema = {
   "@type": "BlogPosting",
   "headline": article.data.title,
   "description": description,
-  "image": new URL('/og-default.jpg', Astro.site).toString(),
+  "image": new URL(share.path, Astro.site).toString(),
   "author": author,
   "publisher": author,
   "datePublished": date.toISOString(),
@@ -77,6 +79,7 @@ const articleSchema = {
   title={`${article.data.title} | meaningfool`}
   description={description}
   type="article"
+  share={share}
 >
   <JsonLd data={articleSchema} />
   <main id="main" class="post">
@@ -84,7 +87,7 @@ const articleSchema = {
     <article>
       <header>
         <p class="meta">
-          <time datetime={date.toISOString().slice(0, 10)}>{date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</time>
+          <time datetime={date.toISOString().slice(0, 10)}>{dateText}</time>
           · {minutes} min read{project && <> · <span>{project.name}</span></>}
         </p>
         <h1>{article.data.title}</h1>

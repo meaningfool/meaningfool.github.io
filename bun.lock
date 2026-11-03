@@ -8,8 +8,10 @@
         "@astrojs/markdown-remark": "^7.3.0",
         "@astrojs/rss": "^4.0.19",
         "astro": "^7.4.3",
+        "fontkitten": "^1.0.3",
         "rehype-raw": "^7.0.0",
         "remark-breaks": "^4.0.0",
+        "sharp": "^0.35.4",
       },
       "devDependencies": {
         "@astrojs/sitemap": "^3.7.4",
