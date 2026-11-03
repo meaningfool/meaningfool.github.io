@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Background from '../components/Background.astro';
 import Frame from '../components/Frame.astro';
 import NotFound from '../components/NotFound.astro';
 import monoFont from '../fonts/dejavu-sans-mono.woff2?url';
@@ -17,6 +18,7 @@ import monoFont from '../fonts/dejavu-sans-mono.woff2?url';
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
+    <Background />
     <Frame>
       <NotFound id="main" />
     </Frame>

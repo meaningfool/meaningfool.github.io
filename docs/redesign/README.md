@@ -26,5 +26,5 @@ python3 docs/redesign/prototype/build.py
 
 ## Where the site differs from the prototype
 
-- The prototype loads `@paper-design/shaders` from jsDelivr and computes the background and the map in the browser. The site prepares them at build time (#30).
+- The prototype loads `@paper-design/shaders` from jsDelivr and computes the background and the map in the browser. The site prepares them ahead of time with `scripts/make-background.py`, which writes small images to `src/assets/background/`, and only lays out and draws the dots in the browser (#30).
 - The prototype uses Menlo and loads Newsreader from Google Fonts. The site self-hosts DejaVu Sans Mono and Newsreader (#29).

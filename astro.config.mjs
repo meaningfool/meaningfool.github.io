@@ -18,7 +18,8 @@ export default defineConfig({
         }),
     },
     integrations: [sitemap({
-        filter: (page) => !/^\/documents\/?$/.test(new URL(page).pathname),
+        // TEMPORARY (#30): /map-preview/ shows the intro and the map until the home uses them; #31 deletes it.
+        filter: (page) => !/^\/(documents|map-preview)\/?$/.test(new URL(page).pathname),
         serialize: (item) => ({ ...item, lastmod: lastModified.get(new URL(item.url).pathname) }),
     }), trailingSlashRedirects()],
     site: 'https://meaningfool.net',
@@ -29,6 +30,11 @@ export default defineConfig({
     vite: {
         resolve: {
             preserveSymlinks: true
+        },
+        build: {
+            // Scripts stay in their own files, never inline: the Content-Security-Policy (public/_headers) only allows
+            // scripts from the site. Other assets keep Vite's default, inline under 4 KB.
+            assetsInlineLimit: (file) => (file.endsWith('.js') ? false : undefined)
         }
     }
 });

@@ -1,5 +1,6 @@
 ---
 import '../styles/tokens.css';
+import Background from '../components/Background.astro';
 import Frame from '../components/Frame.astro';
 import NotFound from '../components/NotFound.astro';
 ---
@@ -26,7 +27,8 @@ import NotFound from '../components/NotFound.astro';
     <script is:inline src="/portfolio-entry.js"></script>
   </head>
   <body>
-    <div id="portfolio-not-found"><Frame><NotFound /></Frame></div>
+    {/* The not-found view looks like /404.html, background included. The portfolio view keeps its plain page. */}
+    <div id="portfolio-not-found"><Background /><Frame><NotFound /></Frame></div>
     <div id="portfolio-content">
       <button id="skip-to-documents" class="skip-link" type="button">Skip to documents</button>
       <header class="page-header">

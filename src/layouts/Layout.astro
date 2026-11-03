@@ -1,15 +1,30 @@
 ---
 import '../styles/global.css';
 import '../styles/legacy.css';
+import Background from '../components/Background.astro';
 import Frame from '../components/Frame.astro';
 import monoFont from '../fonts/dejavu-sans-mono.woff2?url';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  type?: 'website' | 'article';
+  /** The page has the articles' centred 720px text column, which the background's corner pattern makes way for.
+      Articles have it by default. */
+  textColumn?: boolean;
+  /** Ask search engines not to index the page. */
+  noindex?: boolean;
+}
 
 // Accept props for meta tags
 const {
   title = 'meaningfool',
   description = 'Personal site of Josselin Perrus, product manager in Paris',
   ogImage = new URL('/og-default.jpg', Astro.site).toString(),
-  type = 'website'
+  type = 'website',
+  textColumn = type === 'article',
+  noindex = false,
 } = Astro.props;
 
 // Use Astro's built-in URL handling for canonical URLs
@@ -26,6 +41,7 @@ const canonical = canonicalURL.toString();
 
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		{noindex && <meta name="robots" content="noindex" />}
 		<link rel="canonical" href={canonical} />
 
 		<!-- Open Graph -->
@@ -52,6 +68,7 @@ const canonical = canonicalURL.toString();
 	</head>
 	<body>
 		<a class="skip-link" href="#main">Skip to main content</a>
+		<Background textColumn={textColumn} />
 		<Frame>
 			<slot />
 		</Frame>

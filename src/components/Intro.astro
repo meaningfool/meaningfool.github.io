@@ -1,0 +1,104 @@
+---
+// The intro of Home and About: the text on the left at 500px, the topic map on the right, from 480px to 636px wide.
+// The map is taller than the text and spills 84px above and below it without making the intro taller. Below 1120px
+// the map goes under the text, up to 560px wide. The columns are top-aligned, so the label, the title and the map sit
+// at the same place on both pages whatever the length of the text.
+//
+// <Intro label="About" links={{ 'customer-success': '#customer-success' }}>
+//   <Fragment slot="title">Customer success,<br />Product,<br />AI agents<span>.</span></Fragment>
+//   I'm Josselin Perrus, product manager turned builder…
+//   <div slot="after">…</div>
+// </Intro>
+//
+// - label: the small line above the title.
+// - slot "title": the title, inside the <h1>. A <span> in it is in the accent colour, for the full stop.
+// - default slot: the text under the title, in muted grey, up to 52 characters wide.
+// - slot "after": anything under the text, such as buttons and links. It comes 18px under the text.
+// - links, mapLabel: passed to TopicMap, to make the orange dots links and to name the map for screen readers.
+import TopicMap, { type Topic } from './TopicMap.astro';
+
+interface Props {
+	label: string;
+	links?: Partial<Record<Topic, string>>;
+	mapLabel?: string;
+}
+
+const { label, links, mapLabel } = Astro.props;
+---
+
+<section class="intro">
+	<div class="intro-text">
+		<p class="label">{label}</p>
+		<h1><slot name="title" /></h1>
+		<div class="text"><slot /></div>
+		<slot name="after" />
+	</div>
+	<div class="intro-map">
+		<TopicMap links={links} label={mapLabel} />
+	</div>
+</section>
+
+<style>
+	.intro {
+		display: grid;
+		grid-template-columns: 500px minmax(480px, 636px);
+		justify-content: space-between;
+		align-items: start;
+		gap: 40px 56px;
+		padding-block: 104px 120px;
+	}
+
+	.intro-text {
+		display: grid;
+		gap: 18px;
+	}
+
+	.label {
+		margin: 0;
+		font-size: 12px;
+		letter-spacing: 0.04em;
+		color: var(--muted);
+	}
+
+	h1 {
+		margin: 0;
+		font-weight: 400;
+		font-size: clamp(28px, 3.4vw, 40px);
+		line-height: 1.28;
+		letter-spacing: -0.05em;
+		text-wrap: balance;
+	}
+
+	h1 :global(span) {
+		color: var(--accent);
+	}
+
+	.text {
+		max-width: 52ch;
+		color: var(--muted);
+	}
+
+	/* The map is taller than the text: it spills into the intro's padding. */
+	.intro-map {
+		margin-block: -84px;
+	}
+
+	/* Below 1120px there is no room for the text and a map of at least 480px side by side. */
+	@media (max-width: 1119px) {
+		.intro {
+			grid-template-columns: minmax(0, 1fr);
+			padding-block: 72px 88px;
+		}
+
+		.intro-map {
+			margin-block: 0;
+			width: min(100%, 560px);
+		}
+	}
+
+	@media (max-width: 900px) {
+		.intro {
+			padding-block: 48px 64px;
+		}
+	}
+</style>
