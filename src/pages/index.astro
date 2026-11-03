@@ -11,7 +11,8 @@ import { projects, projectOf } from '../data/projects';
 import { profiles } from '../data/profiles';
 import { TOPIC_NAMES, topicsOf } from '../data/topics';
 import { newestFirst } from '../lib/sort-posts';
-import { HOME_INTRO, articleMeta, articlesOnly } from '../lib/share';
+import { readingMinutes } from '../lib/reading-time.mjs';
+import { HOME_INTRO, articlesOnly, plural } from '../lib/share';
 
 const title = 'meaningfool | Josselin Perrus, product manager building with AI agents';
 const description =
@@ -20,7 +21,7 @@ const description =
 const articles = articlesOnly(await getCollection('writing')).sort(newestFirst);
 const rows = articles.map((article) => {
 	const topics = topicsOf(article);
-	if (!topics.length) console.warn(`The home's topic map can't filter "${article.id}": give it a topics field (src/data/topics.ts).`);
+	if (!topics) console.warn(`"${article.id}" has no topics, so picking a topic on the home's map hides it: give it a topics field.`);
 	return {
 		href: `/articles/${article.id}/`,
 		// The day in the content, as UTC keeps it whatever the build machine's time zone
@@ -28,16 +29,15 @@ const rows = articles.map((article) => {
 		title: article.data.title,
 		project: projectOf(article.id)?.shortName,
 		// The reading time the article page and its share image show
-		minutes: articleMeta(article).minutes,
-		topics,
+		minutes: readingMinutes(article.body),
+		topics: topics ?? [],
 	};
 });
-const countText = (count: number) => `${count} article${count === 1 ? '' : 's'}`;
+const allText = plural(rows.length, 'article');
 
 // "May 2026", from the project's YYYY-MM
 const month = (date: string) =>
 	new Date(`${date}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-const tiles = [...projects].sort((a, b) => b.date.localeCompare(a.date));
 
 // JSON-LD structured data for WebSite
 const websiteSchema = {
@@ -75,7 +75,7 @@ const websiteSchema = {
 					<p class="label">Things I built to learn</p>
 				</div>
 				<ul class="tiles" role="list">
-					{tiles.map((project) => (
+					{projects.map((project) => (
 						<li class="tile">
 							<div class="shot">
 								<Image
@@ -96,8 +96,8 @@ const websiteSchema = {
 			<section class="sec" id="writing" aria-labelledby="writing-title">
 				<div class="sec-head">
 					<h2 id="writing-title">Writing</h2>
-					<p class="label count" data-writing-count data-names={JSON.stringify(TOPIC_NAMES)} aria-live="polite" tabindex="-1">
-						{countText(rows.length)}
+					<p class="label count" data-writing-count data-all={allText} data-names={JSON.stringify(TOPIC_NAMES)} aria-live="polite" tabindex="-1">
+						{allText}
 					</p>
 				</div>
 				<ul class="index" role="list" data-writing>
@@ -342,61 +342,70 @@ const websiteSchema = {
 <script>
 	// The topic filter. The listeners are on the document and added once, and each arrival on the home resets the list
 	// and clears the map's pick, so this also works when Astro's ClientRouter swaps pages instead of loading them.
-	type Writing = { list: HTMLElement; count: HTMLElement; names: Record<string, string> };
+	type Writing = { list: HTMLElement; count: HTMLElement; map: HTMLElement | null };
 
 	// The home's Writing list, or null on another page.
 	function writing(): Writing | null {
 		const list = document.querySelector<HTMLElement>('[data-writing]');
 		const count = document.querySelector<HTMLElement>('[data-writing-count]');
-		if (!list || !count) return null;
-		return { list, count, names: JSON.parse(count.dataset.names ?? '{}') };
+		return list && count ? { list, count, map: document.querySelector<HTMLElement>('topic-map') } : null;
 	}
 
 	// Shows the articles about `topic`, or all of them, and marks the topic's dot on the map.
-	function show(topic: string | null) {
-		const page = writing();
-		if (!page) return;
-		const items = [...page.list.querySelectorAll<HTMLElement>('li[data-topics]')];
+	function show({ list, count, map }: Writing, topic: string | null) {
+		const items = [...list.querySelectorAll<HTMLElement>('li[data-topics]')];
 		let shown = 0;
 		for (const item of items) {
 			item.hidden = !!topic && !(item.dataset.topics ?? '').split(' ').includes(topic);
 			if (!item.hidden) shown++;
 		}
-		const map = document.querySelector<HTMLElement>('topic-map');
 		if (map) {
 			if (topic) map.dataset.picked = topic;
 			else delete map.dataset.picked;
 		}
-		const total = items.length;
 		if (topic) {
+			const names: Record<string, string> = JSON.parse(count.dataset.names ?? '{}');
 			const all = document.createElement('button');
 			all.type = 'button';
 			all.dataset.showAll = '';
 			all.textContent = 'Show all';
-			page.count.replaceChildren(`${page.names[topic] ?? topic} · ${shown} of ${total} · `, all);
+			count.replaceChildren(`${names[topic] ?? topic} · ${shown} of ${items.length} · `, all);
 		} else {
-			page.count.textContent = `${total} article${total === 1 ? '' : 's'}`;
+			count.textContent = count.dataset.all ?? '';
 		}
 	}
 
 	document.addEventListener('topicmap:pick', (event) => {
-		if (!writing()) return;
+		const page = writing();
+		if (!page) return;
 		// On the home a dot filters Writing; it never follows a link, should the map have come from another page.
 		event.preventDefault();
-		const map = event.target as HTMLElement;
 		const { topic } = (event as CustomEvent<{ topic: string }>).detail;
-		show(map.dataset.picked === topic ? null : topic);
+		show(page, (event.target as HTMLElement).dataset.picked === topic ? null : topic);
 	});
 
 	document.addEventListener('click', (event) => {
-		const button = (event.target as Element).closest('[data-show-all]');
-		if (!button) return;
+		const button = event.target instanceof Element ? event.target.closest('[data-show-all]') : null;
+		const page = button && writing();
+		if (!page) return;
 		const hadFocus = document.activeElement === button;
-		show(null);
+		show(page, null);
 		// The button is gone: keep the keyboard's place on the count that replaced it.
-		if (hadFocus) writing()?.count.focus();
+		if (hadFocus) page.count.focus();
 	});
 
-	document.addEventListener('astro:page-load', () => show(null));
-	show(null);
+	// Arriving on the home, by a page load or a ClientRouter swap: all the articles, and no pick.
+	function arrive() {
+		const page = writing();
+		if (page) show(page, null);
+	}
+	document.addEventListener('astro:page-load', arrive);
+	arrive();
+
+	// Leaving the home with the ClientRouter: the pick belongs to the home, so a map kept for the next page
+	// (transition:persist) arrives without it.
+	document.addEventListener('astro:before-swap', () => {
+		const page = writing();
+		if (page?.map) delete page.map.dataset.picked;
+	});
 </script>
