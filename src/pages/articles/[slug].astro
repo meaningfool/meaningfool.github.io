@@ -3,6 +3,7 @@ import type { GetStaticPaths } from 'astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import JsonLd from '../../components/JsonLd.astro';
+import { postShare } from '../../lib/share';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const articles = await getCollection('writing');
@@ -14,6 +15,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 const article = Astro.props as CollectionEntry<'writing'>;
 const { Content } = await render(article);
+const share = postShare(article);
 
 // JSON-LD structured data for BlogPosting
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
@@ -27,7 +29,7 @@ const articleSchema = {
   "@type": "BlogPosting",
   "headline": article.data.title,
   "description": article.data.description || article.data.title,
-  "image": new URL('/og-default.jpg', Astro.site).toString(),
+  "image": new URL(share.path, Astro.site).toString(),
   "author": author,
   "publisher": author,
   "datePublished": article.data.date.toISOString(),
@@ -41,6 +43,7 @@ const articleSchema = {
   title={`${article.data.title} | meaningfool`}
   description={article.data.description || article.data.title}
   type="article"
+  share={share}
 >
   <JsonLd data={articleSchema} />
   <main id="main" class="legacy">

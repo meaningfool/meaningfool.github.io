@@ -1,6 +1,7 @@
 """Make the site's self-hosted fonts in src/fonts/ from the original font files.
 
-- DejaVu Sans Mono 2.37, Book: the text of everything but articles and About.
+- DejaVu Sans Mono 2.37, Book: the text of everything but articles and About. The build also draws the share images
+  and the favicon from it (src/lib/mono.ts), so a character missing from it shows as a box in a share image.
 - Newsreader 1.003, regular and italic: the text of articles and About. Its weight is fixed at 400 and its optical size
   axis (6 to 72) is kept, as Google Fonts serves it to the prototype.
 

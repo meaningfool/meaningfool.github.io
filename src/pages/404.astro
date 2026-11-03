@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Frame from '../components/Frame.astro';
 import NotFound from '../components/NotFound.astro';
+import Favicons from '../components/Favicons.astro';
 import monoFont from '../fonts/dejavu-sans-mono.woff2?url';
 ---
 
@@ -12,7 +13,7 @@ import monoFont from '../fonts/dejavu-sans-mono.woff2?url';
     <title>404 - Page Not Found | meaningfool</title>
     <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <Favicons />
     <link rel="preload" href={monoFont} as="font" type="font/woff2" crossorigin />
   </head>
   <body>
