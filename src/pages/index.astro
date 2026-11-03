@@ -1,5 +1,4 @@
 ---
-import Header from '../components/Header.astro';
 import Layout from '../layouts/Layout.astro';
 import ArticlesList from '../components/ArticlesList.astro';
 import JsonLd from '../components/JsonLd.astro';
@@ -27,8 +26,7 @@ const websiteSchema = {
 
 <Layout>
 	<JsonLd data={websiteSchema} />
-	<Header />
-	<main id="main" class="container">
+	<main id="main" class="legacy">
 		<section id="about">
 			<p>👋 Hey, I'm Josselin.</p>
 			<p>🥐 I'm a product person based in Paris.</p>

@@ -1,0 +1,53 @@
+---
+// The site footer: the wordmark, then About and the profiles elsewhere. On phones the links go under the wordmark.
+import Wordmark from './Wordmark.astro';
+
+const links = [
+	{ href: '/about/', label: 'About' },
+	{ href: 'https://www.linkedin.com/in/josselinperrus/', label: 'LinkedIn' },
+	{ href: 'https://github.com/meaningfool', label: 'GitHub' },
+	{ href: 'https://x.com/nonils', label: 'X' },
+];
+---
+
+<footer class="foot">
+	<Wordmark small />
+	<nav class="links" aria-label="Footer">
+		{links.map(({ href, label }) => <a href={href}>{label}</a>)}
+	</nav>
+</footer>
+
+<style>
+	.foot {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 16px;
+		margin-top: 96px;
+		padding: 28px 0 48px;
+		border-top: 1px solid var(--line);
+	}
+
+	.links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px 22px;
+		font-size: 12px;
+	}
+
+	.links a {
+		color: var(--muted);
+		text-decoration: none;
+	}
+
+	.links a:hover {
+		color: var(--ink);
+	}
+
+	@media (max-width: 900px) {
+		.foot {
+			flex-direction: column;
+			align-items: start;
+		}
+	}
+</style>
