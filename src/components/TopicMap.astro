@@ -11,6 +11,11 @@
 // - With `links`, the dots are links, for example to the matching part of a page; otherwise they are buttons.
 // - Setting data-picked="<topic>" on the <topic-map> element marks that dot as picked and dims the others; removing it
 //   clears the pick. Button dots get aria-pressed to match.
+//
+// Going between Home and About without a full page load (IntroRouter.astro), the router keeps the drawing: the canvas
+// is carried over (data-astro-transition-persist) into the next page's <topic-map>, which is otherwise that page's
+// own, with its own dots (buttons or links), no data-picked and no listeners. Nothing is drawn again unless the map's
+// size changed.
 import spec from '../data/topic-map.json';
 import mapUrl from '../assets/background/map.png?url';
 
@@ -38,7 +43,8 @@ const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.
 
 <link rel="preload" href={mapUrl} as="image" type="image/png" />
 <topic-map class="tm" role="group" aria-label={label} data-src={mapUrl} style={`aspect-ratio: ${boxW} / ${boxH}`}>
-	<canvas class="tm-print" aria-hidden="true"></canvas>
+	{/* data-astro-transition-persist is what transition:persist sets, without Astro's view transition styles. */}
+	<canvas class="tm-print" aria-hidden="true" data-astro-transition-persist="topic-map-print"></canvas>
 	<div class="tm-labels">
 		{topics.map((t) => <span class="tm-area" style={place(t.areaAt)}>{t.area}</span>)}
 		{topics.map((t) =>
@@ -155,6 +161,10 @@ const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.
 	type MapData = { grey: Uint8Array; w: number; h: number; mask: HTMLCanvasElement };
 	let loading: Promise<MapData> | null = null;
 
+	// What each canvas holds: its [width, height, pixel ratio] when drawn. It is kept by canvas rather than by map, so a
+	// canvas carried over to the next page's map counts as drawn there.
+	const drawnSizes = new WeakMap<HTMLCanvasElement, number[]>();
+
 	// map.png (data-src) is the grey image the prototype gave the shader. The prototype also masked the print to where
 	// there is ink, as the shader leaves a faint dot on bare paper, and faded the land over the outer 4% of the box.
 	// If the image can't be had, the map shows its labels and dots alone, and the next draw tries again.
@@ -245,7 +255,6 @@ const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.
 
 	class TopicMap extends HTMLElement {
 		static observedAttributes = ['data-picked'];
-		#drawn: number[] | null = null;
 		#drawing = false;
 		#timer = 0;
 		#observer = new ResizeObserver(() => this.#resized());
@@ -260,7 +269,8 @@ const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.
 			});
 		}
 
-		// Runs again if the element is moved, for example kept from one page to the next: what is drawn stays.
+		// Runs again if the element is moved: what is drawn stays. From one page to the next, only the canvas is kept, and
+		// the next page's map takes it (see the top of this file).
 		connectedCallback() {
 			this.#mark();
 			this.#observer.observe(this);
@@ -277,13 +287,20 @@ const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.
 			this.#mark();
 		}
 
+		#canvas() {
+			return this.querySelector<HTMLCanvasElement>('.tm-print');
+		}
+
 		#draw() {
-			const canvas = this.querySelector<HTMLCanvasElement>('.tm-print');
+			const canvas = this.#canvas();
 			if (!canvas || !this.dataset.src || this.#drawing || !this.clientWidth) return;
 			this.#drawing = true;
 			load(this.dataset.src)
 				.then((data) => {
-					this.#drawn = draw(this, canvas, data);
+					// The canvas may have gone to another page's map meanwhile: that map draws it if it needs to.
+					if (!this.contains(canvas)) return;
+					const drawn = draw(this, canvas, data);
+					if (drawn) drawnSizes.set(canvas, drawn);
 				})
 				.catch(() => {})
 				.finally(() => {
@@ -291,13 +308,20 @@ const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.
 				});
 		}
 
+		#drawnSize() {
+			const canvas = this.#canvas();
+			return canvas && drawnSizes.get(canvas);
+		}
+
 		// Drawn once. While the map is resized the browser stretches what is drawn; once resizing stops, it is drawn
 		// again, and only if its size changed by more than a tenth, or it moved to a screen with another pixel density.
 		#resized = () => {
 			clearTimeout(this.#timer);
-			if (!this.#drawn) return this.#draw();
+			if (!this.#drawnSize()) return this.#draw();
 			this.#timer = window.setTimeout(() => {
-				const [w, h, dpr] = this.#drawn!;
+				const drawn = this.#drawnSize();
+				if (!drawn) return this.#draw();
+				const [w, h, dpr] = drawn;
 				if (Math.abs(this.clientWidth - w) > w / 10 || Math.abs(this.clientHeight - h) > h / 10 || pixelRatio() !== dpr) this.#draw();
 			}, 200);
 		};
