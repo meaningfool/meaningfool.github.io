@@ -7,6 +7,7 @@ import Favicons from '../components/Favicons.astro';
 import IntroRouter from '../components/IntroRouter.astro';
 import monoFont from '../fonts/dejavu-sans-mono.woff2?url';
 import { SITE_SHARE, type Share } from '../lib/share';
+import { isIntroPage } from '../lib/intro-pages';
 
 interface Props {
   title?: string;
@@ -18,10 +19,6 @@ interface Props {
   textColumn?: boolean;
   /** Ask search engines not to index the page. */
   noindex?: boolean;
-  /** The page opens with the intro and its topic map, as Home and About do: going between those pages then happens
-      without a full page load, and the map and the background stay as they are drawn (IntroRouter.astro).
-      On by default on pages without the text column. */
-  introMap?: boolean;
 }
 
 // Accept props for meta tags. `share` is the page's share image, the site's unless it has its own.
@@ -32,9 +29,12 @@ const {
   type = 'website',
   textColumn = type === 'article',
   noindex = false,
-  introMap = !textColumn,
 } = Astro.props;
 const ogImage = new URL(share.path, Astro.site).toString();
+
+// Home and About go from one to the other without a full page load, keeping the map and the background as they are
+// drawn (IntroRouter.astro). The list is src/lib/intro-pages.ts.
+const introPage = isIntroPage(Astro.url.pathname);
 
 // Use Astro's built-in URL handling for canonical URLs
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -79,11 +79,11 @@ const canonical = canonicalURL.toString();
 		<!-- Every page's text starts in the mono font, so fetch it with the page -->
 		<link rel="preload" href={monoFont} as="font" type="font/woff2" crossorigin />
 
-		{introMap && <IntroRouter />}
+		{introPage && <IntroRouter />}
 	</head>
 	<body>
 		<a class="skip-link" href="#main">Skip to main content</a>
-		<Background textColumn={textColumn} persist={introMap} />
+		<Background textColumn={textColumn} persist={introPage} />
 		<Frame>
 			<slot />
 		</Frame>

@@ -43,7 +43,7 @@ export default defineConfig({
     output: 'static',
     compressHTML: true, // Astro 7 defaults to 'jsx', which drops whitespace between inline elements
     trailingSlash: 'always', // Pages live at /page/; dist/_redirects sends /page there with a 301
-    prefetch: false, // The ClientRouter on Home and About (IntroRouter.astro) would otherwise prefetch every link hovered
+    prefetch: false, // Home and About's ClientRouter (IntroRouter.astro) would otherwise prefetch every link hovered
     vite: {
         resolve: {
             preserveSymlinks: true

@@ -12,10 +12,10 @@
 // - Setting data-picked="<topic>" on the <topic-map> element marks that dot as picked and dims the others; removing it
 //   clears the pick. Button dots get aria-pressed to match.
 //
-// Going between two pages that both have the map without a full page load (Layout's introMap: Home and About), the
-// router keeps the drawing: the canvas is carried over (data-astro-transition-persist) into the next page's
-// <topic-map>, which is otherwise that page's own, with its own dots (buttons or links), no data-picked and no
-// listeners. Nothing is drawn again unless the map's size changed.
+// Going between Home and About without a full page load (IntroRouter.astro), the router keeps the drawing: the canvas
+// is carried over (data-astro-transition-persist) into the next page's <topic-map>, which is otherwise that page's
+// own, with its own dots (buttons or links), no data-picked and no listeners. Nothing is drawn again unless the map's
+// size changed.
 import spec from '../data/topic-map.json';
 import mapUrl from '../assets/background/map.png?url';
 
