@@ -1,0 +1,22 @@
+---
+// The frame the site's pages are built in: up to 1240px wide with 24px side padding (more where a phone's notch needs
+// it), the header at the top and the footer at the bottom. It sits above the page background.
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+---
+
+<div class="frame">
+	<Header />
+	<slot />
+	<Footer />
+</div>
+
+<style>
+	.frame {
+		position: relative;
+		z-index: 1;
+		max-width: 1240px;
+		margin-inline: auto;
+		padding-inline: max(24px, env(safe-area-inset-left, 0px)) max(24px, env(safe-area-inset-right, 0px));
+	}
+</style>

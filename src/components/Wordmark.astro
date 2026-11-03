@@ -1,0 +1,29 @@
+---
+// The wordmark, "meaningfool." with the full stop in the accent colour, linking to the home: 22px in the header,
+// 16px (small) in the footer.
+interface Props {
+	small?: boolean;
+}
+
+const { small = false } = Astro.props;
+---
+
+<a class:list={['mark', { small }]} href="/">meaningfool<span aria-hidden="true">.</span></a>
+
+<style>
+	.mark {
+		font-size: 22px;
+		line-height: 1;
+		letter-spacing: -0.055em;
+		color: var(--ink);
+		text-decoration: none;
+	}
+
+	.small {
+		font-size: 16px;
+	}
+
+	.mark span {
+		color: var(--accent);
+	}
+</style>

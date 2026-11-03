@@ -2,7 +2,6 @@
 import type { GetStaticPaths } from 'astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
-import Header from '../../components/Header.astro';
 import JsonLd from '../../components/JsonLd.astro';
 
 export const getStaticPaths: GetStaticPaths = async () => {
@@ -44,8 +43,7 @@ const articleSchema = {
   type="article"
 >
   <JsonLd data={articleSchema} />
-  <Header />
-  <main id="main" class="container">
+  <main id="main" class="legacy">
     <article>
       <header class="article-header">
         <h1>{article.data.title}</h1>
@@ -90,26 +88,25 @@ const articleSchema = {
     font-size: 1rem;
     margin-top: 0;
     display: block;
-    font-family: 'Poppins', sans-serif;
   }
 
   .article-content {
     padding: 1rem 0 4rem 0;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--serif);
   }
 
-  /* Explicitly force Poppins on children to override global body font */
+  /* Explicitly set the serif on children, so no other style gives them the mono */
   .article-content :global(p),
   .article-content :global(ul),
   .article-content :global(ol),
   .article-content :global(li),
   .article-content :global(blockquote) {
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--serif);
   }
 
   .article-content :global(strong),
   .article-content :global(b) {
-    font-weight: 500;
+    font-weight: 600; /* Newsreader comes in one weight, so the browser draws the bold */
   }
 
   .article-content :global(h1) {

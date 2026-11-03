@@ -1,0 +1,27 @@
+/* The redesign's base styles: the page, its text, links and focus. The page frame, the header and the footer are the
+   Frame, Header and Footer components. */
+@import './tokens.css';
+
+* { box-sizing: border-box; }
+html, body { background: var(--page); color: var(--ink); }
+body { margin: 0; font: 13px/1.6 var(--mono); -webkit-font-smoothing: antialiased; }
+p { margin: 0; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Links in running text are underlined. Navigation and lists of links set their own look. */
+a { color: var(--accent); text-decoration: underline 1px; text-underline-position: from-font; }
+
+.skip-link {
+	position: absolute;
+	top: 12px;
+	left: -9999px;
+	z-index: 1000;
+	padding: 10px 14px;
+	border: 1px solid var(--accent);
+	background: var(--page);
+	color: var(--ink);
+	text-decoration: none;
+}
+
+.skip-link:focus { left: 16px; }

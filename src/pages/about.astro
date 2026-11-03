@@ -1,5 +1,4 @@
 ---
-import Header from '../components/Header.astro';
 import Layout from '../layouts/Layout.astro';
 import JsonLd from '../components/JsonLd.astro';
 
@@ -20,8 +19,7 @@ const personSchema = {
 
 <Layout title="About | meaningfool" description="About Josselin Perrus - Product manager based in Paris">
 	<JsonLd data={personSchema} />
-	<Header />
-	<main id="main" class="container">
+	<main id="main" class="legacy">
 		<div class="content">
 			<h1>About me</h1>
 			<p>🏁 Customer success is the goal. (Productized) software may be solution. And it may not. Whatever works</p>
@@ -38,3 +36,9 @@ const personSchema = {
 	</main>
 </Layout>
 
+<style>
+	/* The text of About is in the serif, like the text of articles. */
+	.content p {
+		font-family: var(--serif);
+	}
+</style>

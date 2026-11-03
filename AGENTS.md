@@ -4,7 +4,9 @@ Josselin Perrus's personal site: an Astro 7 static site served by Cloudflare Wor
 
 ## Layout
 
-- `src/`: pages, layouts and components.
+- `src/`: pages, layouts and components. Pages are built in the `Frame` component, which holds the header and the footer; the portfolio view of `/documents/` has its own.
+- `src/styles/`: `tokens.css` holds the colours and fonts as custom properties, `global.css` the base styles, and `legacy.css` the content styles of the pages not yet rebuilt in the redesign.
+- `src/fonts/`: the self-hosted fonts, DejaVu Sans Mono and Newsreader, subset by `scripts/subset-fonts.py`, with their licences. The site loads no outside fonts.
 - `src/content/writing/`: git submodule of [meaningfool-writing](https://github.com/meaningfool/meaningfool-writing), which holds every article, activity log and image. Read its `AGENTS.md` before editing content.
 - `src/content.config.ts`: the content collection, built from `articles/*.md` and `daily-logs/*.md` in the submodule.
 - `docs/document-sharing.md`: how the encrypted portfolio links on `/documents/` work and how to create them.

@@ -1,15 +1,16 @@
 # Cloudflare Workers reads this file; it isn't served there.
 
 # Every response from the site. The Content-Security-Policy only reports for now:
-# it lists what pages load (Google Fonts, YouTube embeds, outside images and
-# Cloudflare's analytics beacon, which reports to /cdn-cgi/rum on this domain).
+# it lists what pages load (YouTube embeds, outside images and Cloudflare's
+# analytics beacon, which reports to /cdn-cgi/rum on this domain). Fonts are
+# self-hosted.
 # Inline styles stay allowed because code highlighting uses style attributes.
 /*
   Strict-Transport-Security: max-age=31536000
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self'; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; media-src 'self'; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
 # Fingerprinted build files: their names change whenever their content does.
 /_astro/*

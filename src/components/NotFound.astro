@@ -1,5 +1,55 @@
-<main>
-  <h1>404 - Page Not Found</h1>
-  <p>The page you're looking for doesn't exist.</p>
-  <p><a href="/">← Back to homepage</a></p>
+---
+// The 404 message, inside the page frame, on /404.html and in the not-found view of /documents/, which must look the
+// same. Its styles don't rely on the base styles, which /documents/ doesn't load.
+interface Props {
+	id?: string;
+}
+
+const { id } = Astro.props;
+---
+
+<main id={id} class="not-found">
+	<h1>404 - Page Not Found</h1>
+	<p>The page you're looking for doesn't exist.</p>
+	<p><a href="/">← Back to homepage</a></p>
 </main>
+
+<style>
+	.not-found {
+		display: grid;
+		gap: 18px;
+		padding-top: 104px;
+	}
+
+	h1 {
+		margin: 0;
+		font-weight: 400;
+		font-size: clamp(28px, 3.4vw, 40px);
+		line-height: 1.28;
+		letter-spacing: -0.05em;
+		text-wrap: balance;
+	}
+
+	p {
+		margin: 0;
+		color: var(--muted);
+	}
+
+	a {
+		color: var(--accent);
+		text-decoration: underline 1px;
+		text-underline-position: from-font;
+	}
+
+	@media (max-width: 1119px) {
+		.not-found {
+			padding-top: 72px;
+		}
+	}
+
+	@media (max-width: 900px) {
+		.not-found {
+			padding-top: 48px;
+		}
+	}
+</style>
