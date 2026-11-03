@@ -24,7 +24,8 @@ for (const id of unknownTopicIds(articles.map((article) => article.id))) {
 }
 const rows = articles.map((article) => {
 	const topics = topicsOf(article);
-	if (!topics) console.warn(`"${article.id}" has no topics, so picking a topic on the home's map hides it: give it a topics field.`);
+	// At 30% or more, every article has at least one topic: three shares under 30% can't make a whole.
+	if (!topics?.length) console.warn(`"${article.id}" has no topics, so picking a topic on the home's map hides it: give it a topics field.`);
 	return {
 		href: `/articles/${article.id}/`,
 		// The day in the content, as UTC keeps it whatever the build machine's time zone
@@ -344,8 +345,9 @@ const websiteSchema = {
 </style>
 
 <script>
-	// The topic filter. The listeners are on the document and added once, and each arrival on the home resets the list
-	// and clears the map's pick, so this also works when Astro's ClientRouter swaps pages instead of loading them.
+	// The topic filter. The listeners are on the document and added once, and each arrival on the home, by a page load
+	// or a swap by Astro's ClientRouter, resets the list and clears the map's pick. (A page the browser restores from its
+	// back-forward cache comes back as it was left, its list and its map still in step.)
 	type Writing = { list: HTMLElement; count: HTMLElement; map: HTMLElement | null };
 
 	// The home's Writing list, or null on another page.
