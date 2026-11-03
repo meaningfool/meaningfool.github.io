@@ -1,0 +1,41 @@
+<meta charset="utf-8">
+<title>Shader calibration</title>
+<div id="h" style="width:540px;aspect-ratio:420/300;position:relative"></div>
+<pre id="out"></pre>
+<script type="module">
+// Print a left-to-right ramp of ink (0 to 0.62) through the same shader settings as the maps, then measure
+// how much of each column the dots cover. That gives ink -> dot coverage for the previews.
+import * as P from 'https://cdn.jsdelivr.net/npm/@paper-design/shaders@0.0.81/+esm';
+const W = 420, H = 300, holder = document.getElementById('h');
+const c = document.createElement('canvas'); c.width = W; c.height = H;
+const g = c.getContext('2d'), d = g.createImageData(W, H);
+for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+  const ink = 0.62 * x / (W - 1), i = (y * W + x) * 4;
+  d.data[i] = d.data[i + 1] = d.data[i + 2] = 255 * (1 - ink); d.data[i + 3] = 255;
+}
+g.putImageData(d, 0, 0);
+const img = new Image(); img.src = c.toDataURL('image/png'); await new Promise((r) => { img.onload = r; });
+const PITCH = 7.8, sizeFor = (h) => Math.pow((300 - Math.min(300, Math.max(7, h / PITCH))) / 293, 1 / 0.7);
+const m = new P.ShaderMount(holder, P.halftoneDotsFragmentShader, {
+  u_image: img, u_colorFront: P.getShaderColorFromString('#9a9991'), u_colorBack: [0, 0, 0, 0],
+  u_size: sizeFor(holder.clientHeight), u_radius: 1.0, u_contrast: 0.72, u_originalColors: false, u_inverted: false,
+  u_grainMixer: 0.15, u_grainOverlay: 0, u_grainSize: 0.5,
+  u_grid: P.HalftoneDotsGrids.hex, u_type: P.HalftoneDotsTypes.classic,
+  u_fit: P.ShaderFitOptions.cover, u_scale: 1, u_rotation: 0, u_offsetX: 0, u_offsetY: 0,
+  u_originX: 0.5, u_originY: 0.5, u_worldWidth: 0, u_worldHeight: 0,
+}, { premultipliedAlpha: true, alpha: true }, 0);
+window.measure = () => {
+  m.devicePixelsSupported = false; m.parentWidth = holder.clientWidth; m.parentHeight = holder.clientHeight; m.handleResize(); m.render(performance.now());
+  const cv = holder.querySelector('canvas'), t = document.createElement('canvas'); t.width = cv.width; t.height = cv.height;
+  const tg = t.getContext('2d'); tg.drawImage(cv, 0, 0);
+  const px = tg.getImageData(0, Math.round(cv.height * 0.2), cv.width, Math.round(cv.height * 0.6)).data, rows = Math.round(cv.height * 0.6);
+  const bins = 31, cov = new Array(bins).fill(0), cnt = new Array(bins).fill(0);
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cv.width; x++) {
+    const b = Math.min(bins - 1, Math.floor(x / cv.width * bins)), a = px[(y * cv.width + x) * 4 + 3] / 255;
+    cov[b] += a; cnt[b]++;
+  }
+  const table = cov.map((s, b) => [+(0.62 * (b + 0.5) / bins).toFixed(3), +(s / cnt[b]).toFixed(3)]);
+  document.getElementById('out').textContent = JSON.stringify(table);
+  return table;
+};
+</script>
