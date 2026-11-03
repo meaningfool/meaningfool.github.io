@@ -9,7 +9,7 @@ import Intro from '../components/Intro.astro';
 import JsonLd from '../components/JsonLd.astro';
 import { projects, projectOf } from '../data/projects';
 import { profiles } from '../data/profiles';
-import { TOPIC_NAMES, topicsOf } from '../data/topics';
+import { TOPIC_NAMES, topicsOf, unknownTopicIds } from '../data/topics';
 import { newestFirst } from '../lib/sort-posts';
 import { readingMinutes } from '../lib/reading-time.mjs';
 import { HOME_INTRO, articlesOnly, plural } from '../lib/share';
@@ -19,6 +19,9 @@ const description =
 	"Josselin Perrus's site: a product manager in Paris building AI products with AI agents. His projects, and writing on customer success, product and AI agents.";
 
 const articles = articlesOnly(await getCollection('writing')).sort(newestFirst);
+for (const id of unknownTopicIds(articles.map((article) => article.id))) {
+	console.warn(`src/data/topics.ts gives topics to an article that doesn't exist: ${id}`);
+}
 const rows = articles.map((article) => {
 	const topics = topicsOf(article);
 	if (!topics) console.warn(`"${article.id}" has no topics, so picking a topic on the home's map hides it: give it a topics field.`);
@@ -86,7 +89,9 @@ const websiteSchema = {
 								/>
 							</div>
 							<p class="meta">{project.type} · {month(project.date)}</p>
-							<h3><a href={project.link}>{project.name} <span aria-hidden="true">↗</span></a></h3>
+							<h3>
+								<a href={project.link}><span class="name">{project.name}</span> <span class="arrow" aria-hidden="true">↗</span></a>
+							</h3>
 							<p class="line">{project.description}</p>
 						</li>
 					))}
@@ -106,7 +111,7 @@ const websiteSchema = {
 							<a class="row" href={row.href}>
 								<time class="d" datetime={row.date}>{row.date}</time>
 								<span class="t">{row.title}</span>
-								<span class="p">{row.project ?? '—'}</span>
+								<span class="p">{row.project ?? <span aria-hidden="true">—</span>}</span>
 								<span class="r">{row.minutes} min</span>
 							</a>
 						</li>
@@ -265,14 +270,13 @@ const websiteSchema = {
 		inset: 0;
 	}
 
-	h3 a:hover {
+	/* On hover the name is underlined, not the space and the arrow after it. */
+	h3 a:hover .name {
 		text-decoration: underline;
 		text-underline-offset: 4px;
 	}
 
-	/* An inline block, so the title's underline stops before the arrow */
-	h3 span {
-		display: inline-block;
+	h3 .arrow {
 		color: var(--accent);
 	}
 
@@ -390,10 +394,10 @@ const websiteSchema = {
 		const button = event.target instanceof Element ? event.target.closest('[data-show-all]') : null;
 		const page = button && writing();
 		if (!page) return;
-		const hadFocus = document.activeElement === button;
 		show(page, null);
-		// The button is gone: keep the keyboard's place in Writing, on its heading.
-		if (hadFocus) document.getElementById('writing-title')?.focus();
+		// The button is gone: keep the keyboard's or the screen reader's place in Writing, on its heading. (Focused this
+		// way after a mouse click, it shows no focus ring.)
+		document.getElementById('writing-title')?.focus({ preventScroll: true });
 	});
 
 	// Arriving on the home, by a page load or a ClientRouter swap: all the articles, and no pick.

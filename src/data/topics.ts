@@ -46,3 +46,9 @@ const fromPrototype: Record<string, Topic[]> = {
 export function topicsOf(article: CollectionEntry<'writing'>): Topic[] | undefined {
 	return article.data.topics ?? fromPrototype[article.id];
 }
+
+/** The ids in the list above that match no article, for example after an article's file was renamed. */
+export function unknownTopicIds(articleIds: Iterable<string>): string[] {
+	const ids = new Set(articleIds);
+	return Object.keys(fromPrototype).filter((id) => !ids.has(id));
+}
