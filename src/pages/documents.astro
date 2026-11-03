@@ -2,6 +2,7 @@
 import '../styles/tokens.css';
 import Frame from '../components/Frame.astro';
 import NotFound from '../components/NotFound.astro';
+import Favicons from '../components/Favicons.astro';
 ---
 
 <!doctype html>
@@ -16,7 +17,7 @@ import NotFound from '../components/NotFound.astro';
       content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-src blob:; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <title>404 - Page Not Found | meaningfool</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <Favicons />
     <style is:inline>
       #portfolio-content { display: none; }
       #portfolio-not-found { display: block; }
