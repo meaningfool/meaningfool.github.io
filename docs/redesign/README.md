@@ -21,6 +21,7 @@ python3 docs/redesign/prototype/build.py
 - `prototype/template.html`: the layout, styles and copy of the three pages. Its script draws the paper background (Paper Shaders), the corner pattern (a canvas) and the mask that clears the pattern around the map. The settled values are at the top of the script.
 - `prototype/maps.js`: the 18 articles with their topic weights (customer success, product, AI agents), the map shapes, labels and orange dots, and the print settings. The chosen map is `best`, placed by `fit()`.
 - `prototype/images/`: the project screenshots and the article figure.
+- `paper/`: exports from the Paper file, with their exact values: the share images and the favicon (#34), and the chosen article design (#32).
 - `map-tools/`: how the map was made. `gen.py` builds island maps from specs; `specs-2.json` holds the recipe for `best`. `lib.py` computes the ink field and a halftone preview calibrated against the shader: `calib.json` (ink to dot coverage) was measured with `calib.html`. Useful for #30, which has to draw the dots without the shader. Needs numpy and Pillow.
 
 ## Where the site differs from the prototype
