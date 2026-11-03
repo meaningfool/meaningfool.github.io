@@ -171,6 +171,8 @@ function shape(parent) {
 	}
 }
 
+// Its options go unused: astro.config.mjs passes a hash of the Markdown plugins there, so that Astro renders the posts
+// again when they change.
 export default function rehypeArticle() {
 	return (tree) => shape(tree);
 }

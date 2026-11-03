@@ -1,4 +1,6 @@
 // @ts-check
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
@@ -13,13 +15,21 @@ import { postLastModified } from './src/lib/posts.mjs';
 
 const lastModified = postLastModified(fileURLToPath(new URL('./src/content/writing', import.meta.url)));
 
+// Astro keeps each post's rendered HTML between builds, in node_modules/.astro, which the deploy workflow restores from
+// its cache, and renders a post again only when the post or this config changes. The Markdown plugins' code and the
+// installed packages aren't part of the config it compares, so a hash of them is, as rehypeArticle's options.
+const markdownSources = ['src/lib/remark-drop-title.mjs', 'src/lib/remark-heading-levels.mjs', 'src/lib/rehype-article.mjs', 'bun.lock'];
+const markdownDigest = createHash('sha256')
+    .update(markdownSources.map((file) => readFileSync(new URL(`./${file}`, import.meta.url), 'utf8')).join('\0'))
+    .digest('hex');
+
 // https://astro.build/config
 export default defineConfig({
     markdown: {
         processor: unified({
             remarkPlugins: [remarkBreaks, remarkDropTitle, remarkHeadingLevels],
             // rehype-raw first, so that rehypeArticle also sees the HTML written in the Markdown, such as embeds
-            rehypePlugins: [rehypeRaw, rehypeArticle],
+            rehypePlugins: [rehypeRaw, [rehypeArticle, { markdownDigest }]],
         }),
         shikiConfig: { theme: 'github-light' }, // code blocks sit on the white page, in a light frame (prose.css)
     },
