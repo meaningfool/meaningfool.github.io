@@ -269,7 +269,8 @@ const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.
 			});
 		}
 
-		// Runs again if the element is moved, for example kept from one page to the next: what is drawn stays.
+		// Runs again if the element is moved: what is drawn stays. From one page to the next, only the canvas is kept, and
+		// the next page's map takes it (see the top of this file).
 		connectedCallback() {
 			this.#mark();
 			this.#observer.observe(this);
