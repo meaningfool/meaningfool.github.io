@@ -34,8 +34,7 @@ export default defineConfig({
         shikiConfig: { theme: 'github-light' }, // code blocks sit on the white page, in a light frame (prose.css)
     },
     integrations: [sitemap({
-        // TEMPORARY (#30): /map-preview/ shows the intro and the map until the home uses them; #31 deletes it.
-        filter: (page) => !/^\/(documents|map-preview)\/?$/.test(new URL(page).pathname),
+        filter: (page) => !/^\/documents\/?$/.test(new URL(page).pathname),
         serialize: (item) => ({ ...item, lastmod: lastModified.get(new URL(item.url).pathname) }),
     }), trailingSlashRedirects()],
     site: 'https://meaningfool.net',

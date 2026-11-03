@@ -1,13 +1,9 @@
 ---
 // The site footer: the wordmark, then About and the profiles elsewhere. On phones the links go under the wordmark.
 import Wordmark from './Wordmark.astro';
+import { profiles } from '../data/profiles';
 
-const links = [
-	{ href: '/about/', label: 'About' },
-	{ href: 'https://www.linkedin.com/in/josselinperrus/', label: 'LinkedIn' },
-	{ href: 'https://github.com/meaningfool', label: 'GitHub' },
-	{ href: 'https://x.com/nonils', label: 'X' },
-];
+const links = [{ href: '/about/', label: 'About' }, ...profiles];
 ---
 
 <footer class="foot">

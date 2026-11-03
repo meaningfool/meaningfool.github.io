@@ -19,7 +19,8 @@ export const HOME_INTRO =
 /** The share image of Home and About. The activity logs, which have none of their own, use it too. */
 export const SITE_SHARE: Share = { path: '/share.png', alt: `Josselin Perrus. ${HOME_INTRO}` };
 
-const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
+/** "18 articles", "1 project" */
+export const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
 /** "May 27, 2026": the date in the content is a day, which UTC keeps whatever the build machine's time zone. */
 export function formatDate(date: Date): string {
