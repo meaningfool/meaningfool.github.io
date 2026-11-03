@@ -1,0 +1,316 @@
+---
+// The topic map, "Best of three": three islands in grey halftone dots, named in grey capitals, with an orange dot
+// for each of the site's three topics. scripts/make-background.py turns the land (src/data/topic-map.json) into
+// map.png; the script below lays the dots 7.8px apart over the map's box, whatever its size, and reads each dot's size
+// from that image, as the prototype's shader did. No shader library, no WebGL.
+//
+// The orange dots are the map's interface (see the PR for #30, and Intro.astro):
+// - Each dot has its topic in data-topic: customer-success, product or ai-agents.
+// - Clicking one sends a "topicmap:pick" event from the <topic-map> element. It bubbles, and event.detail.topic is the
+//   dot's topic. It can be cancelled: calling preventDefault() stops a link dot from following its link.
+// - With `links`, the dots are links, for example to the matching part of a page; otherwise they are buttons.
+// - Setting data-picked="<topic>" on the <topic-map> element marks that dot as picked and dims the others; removing it
+//   clears the pick. Button dots get aria-pressed to match.
+import spec from '../data/topic-map.json';
+import mapUrl from '../assets/background/map.png?url';
+
+export type Topic = 'customer-success' | 'product' | 'ai-agents';
+
+interface Props {
+	/** Turns the dots into links, for example { 'customer-success': '#customer-success' }. */
+	links?: Partial<Record<Topic, string>>;
+	/** What screen readers announce for the map. */
+	label?: string;
+}
+
+const { links = {}, label = 'Map of the writing: Customer success, Product and AI agents' } = Astro.props;
+const [boxW, boxH] = spec.box;
+
+// "Best of three" runs past the right edge of its box, so the prototype draws it 7% smaller about the centre of its
+// land. Labels and dots move with it (make-background.py does the same to the land).
+const { scale, centre } = spec.fit;
+const place = ([x, y]: number[]) => {
+	const at = (v: number, c: number) => ((0.5 + (v - c) * scale) * 100).toFixed(2) + '%';
+	return `left: ${at(x, centre[0])}; top: ${at(y, centre[1])}`;
+};
+const topics = spec.topics.map((t) => ({ ...t, id: t.id as Topic, href: links[t.id as Topic] }));
+---
+
+<link rel="preload" href={mapUrl} as="image" type="image/png" />
+<topic-map class="tm" role="group" aria-label={label} data-src={mapUrl} style={`aspect-ratio: ${boxW} / ${boxH}`}>
+	<canvas class="tm-print" aria-hidden="true"></canvas>
+	<div class="tm-labels">
+		{topics.map((t) => <span class="tm-area" style={place(t.areaAt)}>{t.area}</span>)}
+		{topics.map((t) =>
+			t.href ? (
+				<a class:list={['tm-pin', { l: t.nameSide === 'left' }]} href={t.href} data-topic={t.id} style={place(t.dotAt)}>
+					<span>{t.name}</span>
+				</a>
+			) : (
+				<button type="button" class:list={['tm-pin', { l: t.nameSide === 'left' }]} data-topic={t.id} aria-pressed="false" style={place(t.dotAt)}>
+					<span>{t.name}</span>
+				</button>
+			),
+		)}
+	</div>
+</topic-map>
+
+<style>
+	.tm {
+		position: relative;
+		display: block;
+		font-family: var(--mono);
+		line-height: 1.6;
+	}
+
+	.tm-print,
+	.tm-labels {
+		position: absolute;
+		inset: 0;
+	}
+
+	.tm-print {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.tm-area {
+		position: absolute;
+		transform: translate(-50%, -50%);
+		font-size: 10px;
+		letter-spacing: 0.08em;
+		color: var(--muted);
+		background: rgba(244, 243, 238, 0.82);
+		padding: 2px 6px;
+		white-space: nowrap;
+		pointer-events: none;
+	}
+
+	.tm-pin {
+		position: absolute;
+		width: 9px;
+		height: 9px;
+		margin: -4.5px 0 0 -4.5px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: var(--accent);
+		box-shadow: 0 0 0 3px rgba(244, 243, 238, 0.9);
+		cursor: pointer;
+		font: inherit;
+		text-decoration: none;
+		transition: opacity 0.2s;
+	}
+
+	.tm-pin span {
+		position: absolute;
+		left: 14px;
+		top: -6px;
+		font-size: 11px;
+		color: var(--ink);
+		white-space: nowrap;
+		background: rgba(244, 243, 238, 0.82);
+		padding: 0 4px;
+	}
+
+	.tm-pin.l span {
+		left: auto;
+		right: 14px;
+	}
+
+	.tm-pin:hover span,
+	.tm-pin:focus-visible span,
+	.tm-pin.on span {
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.tm-pin:focus {
+		outline: none;
+	}
+
+	.tm-pin:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 4px;
+	}
+
+	.tm[data-picked] .tm-pin:not(.on) {
+		opacity: 0.4;
+	}
+</style>
+
+<script>
+	// The prototype's print settings: grey dots 7.8px apart on the shader's hex grid (every other row moved by half a
+	// step), as big as the shader makes them from the image's grey (contrast 0.72), its grain thinning them a little.
+	const PITCH = 7.8;
+	const COLOR = '#9a9991';
+	const CONTRAST = 15 * 0.72 ** 1.5;
+	// The shader's grain (0.15) thins the dots in specks finer than a pixel: by 0.15 x 0.285 = 4.3% on average.
+	const GRAIN = 1 - 0.15 * 0.285;
+	// Like the shader, draw at twice the CSS pixels or more, up to 3x: on a 1x canvas the dots smaller than a pixel lose
+	// some of their ink, and the map came out 8% lighter.
+	const pixelRatio = () => Math.min(3, Math.max(2, window.devicePixelRatio || 1));
+
+	type MapData = { grey: Uint8Array; w: number; h: number; mask: HTMLCanvasElement };
+	let loading: Promise<MapData> | null = null;
+
+	// map.png (data-src) is the grey image the prototype gave the shader. The prototype also masked the print to where
+	// there is ink, as the shader leaves a faint dot on bare paper, and faded the land over the outer 4% of the box.
+	// If the image can't be had, the map shows its labels and dots alone, and the next draw tries again.
+	function load(src: string): Promise<MapData> {
+		loading ??= (async () => {
+			const img = new Image();
+			img.src = src;
+			await img.decode();
+			const w = img.naturalWidth;
+			const h = img.naturalHeight;
+			const c = document.createElement('canvas');
+			c.width = w;
+			c.height = h;
+			const g = c.getContext('2d', { willReadFrequently: true })!;
+			g.drawImage(img, 0, 0);
+			const px = g.getImageData(0, 0, w, h);
+			const grey = new Uint8Array(w * h);
+			for (let y = 0; y < h; y++) {
+				for (let x = 0; x < w; x++) {
+					const i = y * w + x;
+					grey[i] = px.data[i * 4];
+					const e = Math.min(1, x / w / 0.04, (1 - x / w) / 0.04, y / h / 0.04, (1 - y / h) / 0.04);
+					const ink = 1 - grey[i] / 255;
+					px.data[i * 4 + 3] = 255 * e * e * (3 - 2 * e) * Math.min(1, Math.max(0, (ink - 0.02) / 0.06));
+				}
+			}
+			g.putImageData(px, 0, 0);
+			return { grey, w, h, mask: c };
+		})();
+		loading.catch(() => {
+			loading = null;
+		});
+		return loading;
+	}
+
+	// The shader's dots have a soft edge, about a pixel either side, so small ones print bigger than their radius: give
+	// each dot the radius of a sharp one with as much ink.
+	function inked(r: number, aa: number) {
+		if (r >= aa) return Math.sqrt(r * r + 0.2 * aa * aa);
+		const t = (aa - r) / (2 * aa);
+		return aa * Math.sqrt(8 * (0.15 - 0.5 * t + 0.5 * t ** 2 - 0.25 * t ** 4 + 0.1 * t ** 5));
+	}
+
+	function draw(el: HTMLElement, canvas: HTMLCanvasElement, { grey: img, w: iw, h: ih, mask }: MapData) {
+		const w = el.clientWidth;
+		const h = el.clientHeight;
+		if (!w || !h) return null;
+		const dpr = pixelRatio();
+		canvas.width = Math.round(w * dpr);
+		canvas.height = Math.round(h * dpr);
+		const g = canvas.getContext('2d')!;
+		g.setTransform(dpr, 0, 0, dpr, 0, 0);
+		// The shader draws at this resolution too; its edges are about one of its pixels wide.
+		const aa = 4 / Math.PI / dpr;
+		const cols = Math.ceil(w / 2 / PITCH) + 1;
+		const rows = Math.ceil(h / 2 / PITCH) + 1;
+		g.fillStyle = COLOR;
+		g.globalAlpha = GRAIN;
+		g.beginPath();
+		for (let j = -rows; j <= rows; j++) {
+			const y = h / 2 + j * PITCH;
+			const shift = j & 1 ? PITCH / 2 : 0;
+			for (let i = -cols; i <= cols; i++) {
+				const x = w / 2 + i * PITCH + shift;
+				if (x < -PITCH || x > w + PITCH || y < -PITCH || y > h + PITCH) continue;
+				// The grey under the dot's centre, as the GPU reads it.
+				const fx = Math.min(iw - 1, Math.max(0, (x / w) * iw - 0.5));
+				const fy = Math.min(ih - 1, Math.max(0, (y / h) * ih - 0.5));
+				const x0 = Math.min(iw - 2, Math.floor(fx));
+				const y0 = Math.min(ih - 2, Math.floor(fy));
+				const tx = fx - x0;
+				const ty = fy - y0;
+				const o = y0 * iw + x0;
+				const grey = (img[o] * (1 - tx) * (1 - ty) + img[o + 1] * tx * (1 - ty) + img[o + iw] * (1 - tx) * ty + img[o + iw + 1] * tx * ty) / 255;
+				const lum = 1 / (1 + Math.exp(-CONTRAST * (grey - 0.5)));
+				const r = inked(0.5 * PITCH * (1 - lum), aa);
+				g.moveTo(x + r, y);
+				g.arc(x, y, r, 0, 2 * Math.PI);
+			}
+		}
+		g.fill();
+		g.globalAlpha = 1;
+		g.globalCompositeOperation = 'destination-in';
+		g.drawImage(mask, 0, 0, w, h);
+		g.globalCompositeOperation = 'source-over';
+		return [w, h, dpr];
+	}
+
+	class TopicMap extends HTMLElement {
+		static observedAttributes = ['data-picked'];
+		#drawn: number[] | null = null;
+		#drawing = false;
+		#timer = 0;
+		#observer = new ResizeObserver(() => this.#resized());
+
+		constructor() {
+			super();
+			this.addEventListener('click', (e) => {
+				const dot = (e.target as Element).closest<HTMLElement>('[data-topic]');
+				if (!dot || !this.contains(dot)) return;
+				const go = this.dispatchEvent(new CustomEvent('topicmap:pick', { bubbles: true, cancelable: true, detail: { topic: dot.dataset.topic } }));
+				if (!go) e.preventDefault();
+			});
+		}
+
+		// Runs again if the element is moved, for example kept from one page to the next: what is drawn stays.
+		connectedCallback() {
+			this.#mark();
+			this.#observer.observe(this);
+			addEventListener('resize', this.#resized);
+		}
+
+		disconnectedCallback() {
+			this.#observer.disconnect();
+			removeEventListener('resize', this.#resized);
+			clearTimeout(this.#timer);
+		}
+
+		attributeChangedCallback() {
+			this.#mark();
+		}
+
+		#draw() {
+			const canvas = this.querySelector<HTMLCanvasElement>('.tm-print');
+			if (!canvas || !this.dataset.src || this.#drawing || !this.clientWidth) return;
+			this.#drawing = true;
+			load(this.dataset.src)
+				.then((data) => {
+					this.#drawn = draw(this, canvas, data);
+				})
+				.catch(() => {})
+				.finally(() => {
+					this.#drawing = false;
+				});
+		}
+
+		// Drawn once. While the map is resized the browser stretches what is drawn; once resizing stops, it is drawn
+		// again, and only if its size changed by more than a tenth, or it moved to a screen with another pixel density.
+		#resized = () => {
+			clearTimeout(this.#timer);
+			if (!this.#drawn) return this.#draw();
+			this.#timer = window.setTimeout(() => {
+				const [w, h, dpr] = this.#drawn!;
+				if (Math.abs(this.clientWidth - w) > w / 10 || Math.abs(this.clientHeight - h) > h / 10 || pixelRatio() !== dpr) this.#draw();
+			}, 200);
+		};
+
+		#mark() {
+			const picked = this.dataset.picked;
+			this.querySelectorAll<HTMLElement>('[data-topic]').forEach((dot) => {
+				const on = dot.dataset.topic === picked;
+				dot.classList.toggle('on', on);
+				if (dot.localName === 'button') dot.setAttribute('aria-pressed', String(on));
+			});
+		}
+	}
+
+	customElements.define('topic-map', TopicMap);
+</script>

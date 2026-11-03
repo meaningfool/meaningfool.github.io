@@ -1,17 +1,32 @@
 ---
 import '../styles/global.css';
 import '../styles/legacy.css';
+import Background from '../components/Background.astro';
 import Frame from '../components/Frame.astro';
 import Favicons from '../components/Favicons.astro';
 import monoFont from '../fonts/dejavu-sans-mono.woff2?url';
 import { SITE_SHARE, type Share } from '../lib/share';
+
+interface Props {
+  title?: string;
+  description?: string;
+  share?: Share;
+  type?: 'website' | 'article';
+  /** The page has the articles' centred 720px text column, which the background's corner pattern makes way for.
+      Articles have it by default. */
+  textColumn?: boolean;
+  /** Ask search engines not to index the page. */
+  noindex?: boolean;
+}
 
 // Accept props for meta tags. `share` is the page's share image, the site's unless it has its own.
 const {
   title = 'meaningfool',
   description = 'Personal site of Josselin Perrus, product manager in Paris',
   share = SITE_SHARE as Share,
-  type = 'website'
+  type = 'website',
+  textColumn = type === 'article',
+  noindex = false,
 } = Astro.props;
 const ogImage = new URL(share.path, Astro.site).toString();
 
@@ -29,6 +44,7 @@ const canonical = canonicalURL.toString();
 
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		{noindex && <meta name="robots" content="noindex" />}
 		<link rel="canonical" href={canonical} />
 
 		<!-- Open Graph -->
@@ -59,6 +75,7 @@ const canonical = canonicalURL.toString();
 	</head>
 	<body>
 		<a class="skip-link" href="#main">Skip to main content</a>
+		<Background textColumn={textColumn} />
 		<Frame>
 			<slot />
 		</Frame>
