@@ -6,15 +6,24 @@
 // The pattern alone makes way, so the paper keeps going: around the topic map (TopicMap.astro), clear inside the
 // ellipse that fits the map's box and back to full strength at 1.55 times that size; on a page with the centred 720px
 // text column (textColumn), behind a band as wide as the column, fading out between 16px and 112px on each side.
+//
+// With `persist`, going between two pages with the map without a full page load (Layout's introMap: Home and About),
+// the router keeps this element as it is drawn, and its hole moves to the next page's map. A page with the text column
+// has its own mask, so it never shares the element.
 interface Props {
 	/** The page has the centred 720px text column of articles: the pattern is cleared behind it. */
 	textColumn?: boolean;
+	/** Keep the element, as drawn, when the router (IntroRouter.astro) goes to another page that keeps it. */
+	persist?: boolean;
 }
 
-const { textColumn = false } = Astro.props;
+const { textColumn = false, persist = false } = Astro.props;
+// The attribute that transition:persist sets. The directive itself would also add Astro's view transition styles to
+// every page with the background, the 404 page and /documents/ included, which never use the router.
+const keep = persist && !textColumn ? 'page-background' : undefined;
 ---
 
-<page-background aria-hidden="true">
+<page-background aria-hidden="true" data-astro-transition-persist={keep}>
 	<div class="paper"></div>
 	<canvas class="pattern" data-mask={textColumn ? 'column' : undefined}></canvas>
 </page-background>
