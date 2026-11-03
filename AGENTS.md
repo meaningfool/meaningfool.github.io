@@ -9,6 +9,8 @@ Josselin Perrus's personal site: an Astro 7 static site served by Cloudflare Wor
 - `src/fonts/`: the self-hosted fonts, DejaVu Sans Mono and Newsreader, subset by `scripts/subset-fonts.py`, with their licences. The site loads no outside fonts.
 - `src/content/writing/`: git submodule of [meaningfool-writing](https://github.com/meaningfool/meaningfool-writing), which holds every article, activity log and image. Read its `AGENTS.md` before editing content.
 - `src/content.config.ts`: the content collection, built from `articles/*.md` and `daily-logs/*.md` in the submodule.
+- `src/pages/articles/[slug].astro`: the page of every article and activity log. The Markdown goes through the plugins in `src/lib/` set in `astro.config.mjs`: the `# Title` line is dropped, the headings are renumbered from h2, and `rehype-article.mjs` shapes figures, YouTube embeds (moved to youtube-nocookie.com) and tables for `src/styles/prose.css`. In a table, a row whose cells are all bold is highlighted, and a paragraph starting with `Table:` right after it, past a blank line, is its caption. An image alone in its paragraph is captioned with its title, or with its alt text when that has a space.
+- `src/data/projects.ts`: the projects, with their screenshots in `src/assets/projects/`, and which articles belong to each, by article id.
 - `docs/document-sharing.md`: how the encrypted portfolio links on `/documents/` work and how to create them.
 - `wrangler.jsonc`: the Cloudflare Worker `meaningfool`, which serves `dist/` as static assets.
 - `worker/index.js`: the only Worker code. It answers byte-range requests for the videos in `/images/`, which Safari needs to play them.

@@ -4,7 +4,10 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import { unified } from '@astrojs/markdown-remark';
 import remarkBreaks from 'remark-breaks';
+import rehypeRaw from 'rehype-raw';
 import remarkDropTitle from './src/lib/remark-drop-title.mjs';
+import remarkHeadingLevels from './src/lib/remark-heading-levels.mjs';
+import rehypeArticle from './src/lib/rehype-article.mjs';
 import trailingSlashRedirects from './src/lib/trailing-slash-redirects.mjs';
 import { postLastModified } from './src/lib/posts.mjs';
 
@@ -14,8 +17,11 @@ const lastModified = postLastModified(fileURLToPath(new URL('./src/content/writi
 export default defineConfig({
     markdown: {
         processor: unified({
-            remarkPlugins: [remarkBreaks, remarkDropTitle],
+            remarkPlugins: [remarkBreaks, remarkDropTitle, remarkHeadingLevels],
+            // rehype-raw first, so that rehypeArticle also sees the HTML written in the Markdown, such as embeds
+            rehypePlugins: [rehypeRaw, rehypeArticle],
         }),
+        shikiConfig: { theme: 'github-light' }, // code blocks sit on the white page, in a light frame (prose.css)
     },
     integrations: [sitemap({
         filter: (page) => !/^\/documents\/?$/.test(new URL(page).pathname),
