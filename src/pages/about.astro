@@ -1,6 +1,9 @@
 ---
-import Header from '../components/Header.astro';
+// About: the same intro as the home, so the label, the title and the map sit at the same place on both pages, then
+// one part per island of the map. Each part's heading stays in view under the intro text while its text, under the
+// map, is read. The map's orange dots link to the parts.
 import Layout from '../layouts/Layout.astro';
+import Intro from '../components/Intro.astro';
 import JsonLd from '../components/JsonLd.astro';
 
 // JSON-LD structured data for Person
@@ -16,25 +19,153 @@ const personSchema = {
     "https://www.linkedin.com/in/josselinperrus/"
   ]
 };
+
+// The boundary model Skills, in the owner's public skills repository.
+const boundaryModelSkills = 'https://github.com/meaningfool/skills/tree/main/skills/boundary-model';
 ---
 
 <Layout title="About | meaningfool" description="About Josselin Perrus - Product manager based in Paris">
 	<JsonLd data={personSchema} />
-	<Header />
-	<main id="main" class="container">
-		<div class="content">
-			<h1>About me</h1>
-			<p>🏁 Customer success is the goal. (Productized) software may be solution. And it may not. Whatever works</p>
-			<p>👂 Actively listening is where it all starts and ends.</p>
-			<p>⚙️ "Perfection is achieved when there is nothing left to take away." is the rightful defintion of a solution / system</p>
-			<p>&nbsp;</p>
-			<p>🐥 I'm the father of 1, and when I get away, I'm probably bikepaching 🚴‍♂️, or sailing ⛵.</p>
-			<p>👨‍🚀 What get's me going: solving problems, learning, exploring / pioneering a field.</p>
-			<p>🗺️ AI is clearing the map. I'm out there trying to make sense of the new landscape. In public</p>
-			<h1>Work with me</h1>
-			<p>👨‍💻 I mainly do freelance product manager work.</p>
-			<p>💥 But if you think I could be a unique fit for a permanent position, please reach out.</p>
+	<main id="main" class="about">
+		<Intro label="About" links={{ 'customer-success': '#customer-success', product: '#product', 'ai-agents': '#ai-agents' }}>
+			<Fragment slot="title">Customer success,<br />Product,<br />AI agents<span>.</span></Fragment>
+			I'm Josselin Perrus, product manager turned builder. I started in customer-facing roles, spent seven years building the product at Linkurious (2026 exit), and the last three years building with AI.
+		</Intro>
+
+		<div class="parts">
+			<section class="part" id="customer-success" aria-labelledby="customer-success-name">
+				<div class="tag">
+					<h2 id="customer-success-name">Customer Success</h2>
+					<p>Identify the value</p>
+				</div>
+				<div class="text">
+					<p>I started in client-facing positions. Talking to customers and making them successful is still the highlight of my day. It's also where I learnt to listen and be pragmatic.</p>
+					<p>Listen, because when you have little leverage on the product, that's your only chance to narrow the problem enough that you may be able to find a solution.</p>
+					<p>Pragmatic, because a now-solution beats everyday a beautiful solution.</p>
+				</div>
+			</section>
+
+			<section class="part" id="product" aria-labelledby="product-name">
+				<div class="tag">
+					<h2 id="product-name">Product</h2>
+					<p>Decide what to build</p>
+				</div>
+				<div class="text">
+					<p>Linkurious grew from €1K / year / customer to over €100K / year / customer. Self-financed. As the Founding PM, I had to identify the highest leverage bets, and build alignment with the cofounders. And push back on the rest.</p>
+					<p>I build focus and clarity in fluid environments on a deep understanding of customers (120 interviews in the first 6 months at Linkurious), their problems, and how they create opportunities to meet the company strategy.</p>
+				</div>
+			</section>
+
+			<section class="part" id="ai-agents" aria-labelledby="ai-agents-name">
+				<div class="tag">
+					<h2 id="ai-agents-name">AI Agents</h2>
+					<p>Software factory</p>
+				</div>
+				<div class="text">
+					<p>My very first AI project was Dec. 2023: building a knowledge graph from a sum of articles using structured extraction. Later came a data lineage tool, a report on agent frameworks and 2 voice agent projects.</p>
+					<p>I build them end to end with coding agents, from the infrastructure to the prompts, from backend/frontend to benchmarks and evals.</p>
+					<p>I <em>compound</em> building my own set of tools such as my <em>boundary model</em> Skills (<a href={boundaryModelSkills}>GitHub</a>).</p>
+				</div>
+			</section>
 		</div>
 	</main>
 </Layout>
 
+<style>
+	.about {
+		padding-bottom: 24px;
+	}
+
+	/* The parts sit on the intro's two columns: the heading under the intro text, the text under the map. */
+	.part {
+		display: grid;
+		grid-template-columns: 500px minmax(480px, 636px);
+		justify-content: space-between;
+		gap: 12px 56px;
+		padding: 32px 0 44px;
+		border-top: 1px solid var(--line);
+		scroll-margin-top: 24px;
+	}
+
+	/* The heading stays in view while its part is read. */
+	.tag {
+		position: sticky;
+		top: 32px;
+		align-self: start;
+		display: grid;
+		gap: 6px;
+	}
+
+	/* The orange dot, then the name. */
+	h2 {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 0;
+		font-weight: 400;
+		font-size: 18px;
+		line-height: 1.6;
+		letter-spacing: -0.04em;
+	}
+
+	h2::before {
+		content: '';
+		flex: none;
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	/* The map's label for the part, in grey capitals. */
+	.tag p {
+		font-size: 10px;
+		line-height: 1.6;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	/* The article's serif and size. */
+	.text {
+		display: grid;
+		gap: 20px;
+		font-family: var(--serif);
+		font-size: 20px;
+		line-height: 32px;
+	}
+
+	.text a {
+		color: inherit;
+		text-decoration: underline;
+		text-decoration-color: var(--accent);
+		text-underline-position: auto;
+		text-underline-offset: 4px;
+	}
+
+	/* The map's dots link to the parts: scroll there smoothly, unless motion is to be reduced. */
+	@media (prefers-reduced-motion: no-preference) {
+		:global(:root:has(.about .parts)) {
+			scroll-behavior: smooth;
+		}
+	}
+
+	/* Below 1120px, as the intro, one column, up to 720px. */
+	@media (max-width: 1119px) {
+		.part {
+			grid-template-columns: minmax(0, 720px);
+			justify-content: start;
+		}
+
+		.tag {
+			position: static;
+		}
+	}
+
+	@media (max-width: 900px) {
+		.text {
+			font-size: 18px;
+			line-height: 29px;
+		}
+	}
+</style>

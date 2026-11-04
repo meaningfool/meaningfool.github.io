@@ -1,11 +1,39 @@
 ---
-// Accept props for meta tags
+import '../styles/global.css';
+import Background from '../components/Background.astro';
+import Frame from '../components/Frame.astro';
+import Favicons from '../components/Favicons.astro';
+import IntroRouter from '../components/IntroRouter.astro';
+import monoFont from '../fonts/dejavu-sans-mono.woff2?url';
+import { SITE_SHARE, type Share } from '../lib/share';
+import { isIntroPage } from '../lib/intro-pages';
+
+interface Props {
+  title?: string;
+  description?: string;
+  share?: Share;
+  type?: 'website' | 'article';
+  /** The page has the articles' centred 720px text column, which the background's corner pattern makes way for.
+      Articles have it by default. */
+  textColumn?: boolean;
+  /** Ask search engines not to index the page. */
+  noindex?: boolean;
+}
+
+// Accept props for meta tags. `share` is the page's share image, the site's unless it has its own.
 const {
   title = 'meaningfool',
   description = 'Personal site of Josselin Perrus, product manager in Paris',
-  ogImage = new URL('/og-default.jpg', Astro.site).toString(),
-  type = 'website'
+  share = SITE_SHARE as Share,
+  type = 'website',
+  textColumn = type === 'article',
+  noindex = false,
 } = Astro.props;
+const ogImage = new URL(share.path, Astro.site).toString();
+
+// Home and About go from one to the other without a full page load, keeping the map and the background as they are
+// drawn (IntroRouter.astro). The list is src/lib/intro-pages.ts.
+const introPage = isIntroPage(Astro.url.pathname);
 
 // Use Astro's built-in URL handling for canonical URLs
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -16,11 +44,12 @@ const canonical = canonicalURL.toString();
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<Favicons />
 
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		{noindex && <meta name="robots" content="noindex" />}
 		<link rel="canonical" href={canonical} />
 
 		<!-- Open Graph -->
@@ -30,6 +59,9 @@ const canonical = canonicalURL.toString();
 		<meta property="og:url" content={canonical} />
 		<meta property="og:site_name" content="meaningfool" />
 		<meta property="og:image" content={ogImage} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content={share.alt} />
 
 		<!-- Twitter Cards -->
 		<meta name="twitter:card" content="summary_large_image" />
@@ -38,329 +70,21 @@ const canonical = canonicalURL.toString();
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:image" content={ogImage} />
+		<meta name="twitter:image:alt" content={share.alt} />
 
 		<!-- RSS Feed -->
 		<link rel="alternate" type="application/rss+xml" title="meaningfool" href="/rss.xml">
 
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet">
+		<!-- Every page's text starts in the mono font, so fetch it with the page -->
+		<link rel="preload" href={monoFont} as="font" type="font/woff2" crossorigin />
+
+		{introPage && <IntroRouter />}
 	</head>
 	<body>
 		<a class="skip-link" href="#main">Skip to main content</a>
-		<slot />
-		<footer class="container footer">
-			<a href="https://github.com/meaningfool">GitHub</a>
-			<a href="https://twitter.com/nonils">Twitter</a>
-		</footer>
+		<Background textColumn={textColumn} persist={introPage} />
+		<Frame>
+			<slot />
+		</Frame>
 	</body>
 </html>
-
-<style is:global>
-	/* Font loaded via Google Fonts */
-
-	/* CSS Custom Properties */
-	:root {
-		/* Color system */
-		--accent-h: 25;
-		--accent-s: 100%;
-		--accent-l: 56%;
-		--accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
-		--accent-hover: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) - 8%));
-		--bg: #ffffff;
-		--text: #0a0a0a;
-		--muted: #6b7280;
-		--border: #e6e8eb;
-
-		/* Layout system */
-		--measure: 75ch;
-		--container-pad: 1.5rem;
-
-		/* Typography scale */
-		--font-title: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-		--font-body: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-		--font-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-		--font-size-body: 1rem;
-		--line-height-body: 1.7;
-		--font-weight-normal: 300;
-		--font-weight-medium: 500;
-		--font-weight-semibold: 600;
-		--letter-spacing-tight: -0.015em;
-	}
-
-	/* Base styles */
-	html {
-		font-size: 18px; /* Base for rem calculations */
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-		font-family: var(--font-body);
-		font-size: var(--font-size-body);
-		line-height: var(--line-height-body);
-		font-weight: var(--font-weight-normal);
-		color: var(--text);
-		background-color: var(--bg);
-	}
-
-	/* Global utilities */
-	.container {
-		max-width: var(--measure);
-		margin-inline: auto;
-		padding-inline: var(--container-pad);
-	}
-
-	/* Skip link for accessibility */
-	.skip-link {
-		position: absolute;
-		left: -9999px;
-		z-index: 1000;
-		padding: 1rem;
-		background: var(--bg);
-		color: var(--text);
-		text-decoration: none;
-		border: 2px solid var(--accent);
-	}
-	
-	.skip-link:focus {
-		left: 1rem;
-		top: 1rem;
-	}
-
-	/* Focus states */
-	a:focus-visible {
-		outline: 2px solid var(--accent);
-		outline-offset: 2px;
-	}
-
-	/* Section base */
-	section {
-		padding: 2rem 0;
-	}
-
-	section + section {
-		padding-top: 1rem;
-	}
-
-	@media (max-width: 768px) {
-		section {
-			padding: 1.5rem 0;
-		}
-
-		section + section {
-			padding-top: 0.75rem;
-		}
-	}
-
-	/* Typography base */
-	h1, h2, h3, h4, h5, h6 {
-		font-family: var(--font-title);
-		line-height: 1.25;
-		letter-spacing: var(--letter-spacing-tight);
-		margin: 0 0 0.5rem 0;
-	}
-
-	h1 {
-		font-size: clamp(1.125rem, 2.5vw, 1.5rem);
-		text-indent: -2ch;
-		padding-left: 2ch;
-		margin: 2.5rem 0 1rem 0;
-		font-weight: var(--font-weight-medium);
-	}
-
-	h1:first-child {
-		margin-top: 0;
-	}
-
-	h1::before {
-		content: "# ";
-		color: var(--accent);
-		font-weight: var(--font-weight-medium);
-	}
-
-	h2, h3, h4, h5, h6 {
-		font-weight: var(--font-weight-medium);
-	}
-
-	h2 {
-		font-size: 1.375rem;
-	}
-
-	h3 {
-		font-size: 1.25rem;
-	}
-
-	h4, h5, h6 {
-		font-size: 1.125rem;
-	}
-
-	.section-title {
-		margin-bottom: 1rem;
-	}
-
-	p, ul, ol {
-		margin: 0 0 1rem 0;
-		line-height: var(--line-height-body);
-	}
-
-	ul li,
-	ol li {
-		margin-bottom: 0.5rem;
-	}
-
-	ul li:last-child,
-	ol li:last-child {
-		margin-bottom: 0;
-	}
-
-	strong, b {
-		font-weight: 400;
-	}
-
-	a {
-		color: var(--accent);
-		text-decoration: none;
-		word-break: break-word;
-		overflow-wrap: break-word;
-	}
-
-	a:hover {
-		color: var(--accent-hover);
-		text-decoration: underline;
-	}
-
-	/* Footer styles */
-	.footer {
-		margin-top: 3rem;
-		padding-block: 1.5rem;
-		color: var(--muted);
-		border-top: 1px solid var(--border);
-		text-align: center;
-	}
-
-	.footer a {
-		margin-right: 1rem;
-	}
-
-	.footer a:last-child {
-		margin-right: 0;
-	}
-
-	/* Code styling */
-	code {
-		font-family: var(--font-mono);
-		font-size: 0.9em;
-		background-color: #0d1117;
-		color: #f0f6fc;
-		padding: 0.2em 0.4em;
-		border-radius: 3px;
-		word-break: break-all;
-		overflow-wrap: break-word;
-	}
-
-	pre {
-		font-family: var(--font-mono);
-		padding: 1rem;
-		border-radius: 6px;
-		overflow-x: auto;
-		line-height: 1.5;
-	}
-
-	pre code {
-		background: none;
-		color: inherit;
-		padding: 0;
-		font-size: inherit;
-	}
-
-	/* Blockquote styling */
-	blockquote {
-		margin: 1.5rem 0;
-		padding: 1rem 1.5rem;
-		border-left: 4px solid var(--accent);
-		background-color: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.05);
-		font-style: italic;
-	}
-
-	blockquote p:last-child {
-		margin-bottom: 0;
-	}
-
-	/* Table styling */
-	table {
-		width: 100%;
-		margin: 1.5rem 0;
-		border-collapse: collapse;
-		font-size: inherit;
-		display: block;
-		overflow-x: auto;
-	}
-
-	table th,
-	table td {
-		padding: 0.75rem;
-		border: 1px solid #000000;
-	}
-
-	table th {
-		font-weight: var(--font-weight-semibold);
-		background-color: var(--bg);
-	}
-
-	table tr:nth-child(even) {
-		background-color: #f9f9f9;
-	}
-
-	@media (max-width: 768px) {
-		table {
-			font-size: 0.85rem;
-		}
-
-		table th,
-		table td {
-			padding: 0.5rem;
-		}
-	}
-
-	/* Task list styling */
-	ul li:has(input[type="checkbox"]) {
-		list-style: none;
-		margin-left: -1.5rem;
-	}
-
-	ul li:has(input[type="checkbox"]) input[type="checkbox"] {
-		margin-right: 0.5rem;
-	}
-
-	/* Footnotes styling */
-	.footnotes {
-		font-size: 0.875rem;
-		line-height: 1.4;
-		margin-top: 3rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid var(--border);
-	}
-
-	.footnotes ol {
-		margin: 0;
-	}
-
-	.footnotes li {
-		margin-bottom: 0.5rem;
-	}
-
-	/* Image styling */
-	img {
-		max-width: 100%;
-		height: auto;
-		border-radius: 6px;
-		margin: 1rem 0;
-		display: block;
-	}
-
-</style>

@@ -1,0 +1,90 @@
+---
+// "Part of the project", after an article that belongs to one: its screenshot, name, one line and link. On phones the
+// screenshot goes above the text, full width.
+import { Image } from 'astro:assets';
+import type { Project } from '../data/projects';
+
+interface Props {
+	project: Project;
+}
+
+const { project } = Astro.props;
+---
+
+<aside class="project-panel" aria-label="Part of the project">
+	<Image src={project.screenshot} alt="" widths={[352, 720]} sizes="(max-width: 900px) 100vw, 176px" />
+	<div>
+		<p class="label">Part of the project</p>
+		<p class="name">{project.name}</p>
+		<p class="line">{project.description}</p>
+		<a href={project.link}>{project.linkText} ↗</a>
+	</div>
+</aside>
+
+<style>
+	.project-panel {
+		display: flex;
+		align-items: start;
+		gap: 20px;
+		padding: 20px;
+		background: var(--panel);
+	}
+
+	img {
+		flex: 0 0 176px;
+		width: 176px;
+		height: 110px;
+		object-fit: cover;
+		border: 1px solid var(--line);
+	}
+
+	div {
+		display: grid;
+		gap: 6px;
+	}
+
+	.label {
+		font-size: 11px;
+		line-height: 16px;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.name {
+		font-size: 18px;
+		line-height: 26px;
+		letter-spacing: -0.04em;
+	}
+
+	.line {
+		font-size: 13px;
+		line-height: 21px;
+		color: var(--muted);
+	}
+
+	a {
+		justify-self: start;
+		padding-top: 4px;
+		font-size: 12px;
+		line-height: 18px;
+		text-decoration: none;
+	}
+
+	a:hover {
+		text-decoration: underline;
+	}
+
+	@media (max-width: 900px) {
+		.project-panel {
+			flex-direction: column;
+		}
+
+		img {
+			flex: none;
+			width: 100%;
+			height: auto;
+			aspect-ratio: 16 / 10;
+		}
+	}
+</style>

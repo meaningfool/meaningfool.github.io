@@ -4,9 +4,15 @@ Josselin Perrus's personal site: an Astro 7 static site served by Cloudflare Wor
 
 ## Layout
 
-- `src/`: pages, layouts and components.
+- `src/`: pages, layouts and components. Pages are built in the `Frame` component, which holds the header and the footer; the portfolio view of `/documents/` has its own.
+- `src/styles/`: `tokens.css` holds the colours and fonts as custom properties, and `global.css` the base styles.
+- `src/fonts/`: the self-hosted fonts, DejaVu Sans Mono and Newsreader, subset by `scripts/subset-fonts.py`, with their licences. The site loads no outside fonts.
+- The page background (`src/components/Background.astro`: the paper texture and the corner pattern) and the topic map (`TopicMap.astro`, inside the `Intro` of Home and About) are drawn on canvases from small images in `src/assets/background/`. `scripts/make-background.py` makes those images, from the map's land in `src/data/topic-map.json`; rerun it after changing either, and commit its output. The site loads no shader library.
 - `src/content/writing/`: git submodule of [meaningfool-writing](https://github.com/meaningfool/meaningfool-writing), which holds every article, activity log and image. Read its `AGENTS.md` before editing content.
 - `src/content.config.ts`: the content collection, built from `articles/*.md` and `daily-logs/*.md` in the submodule.
+- `src/pages/index.astro`: the home. Its Writing list holds the articles, not the activity logs, and picking a topic on the map shows only the articles about it. An article's topics are its `topics` frontmatter field (`customer-success`, `product`, `ai-agents`: each one that makes up 30% or more of it), or else its entry in `src/data/topics.ts`.
+- `src/pages/articles/[slug].astro`: the page of every article and activity log. The Markdown goes through the plugins in `src/lib/` set in `astro.config.mjs`: the `# Title` line is dropped, the headings are renumbered from h2, and `rehype-article.mjs` shapes figures, YouTube embeds (moved to youtube-nocookie.com) and tables for `src/styles/prose.css`. In a table, a row whose cells are all bold is highlighted, and a paragraph starting with `Table:` right after it, past a blank line, is its caption. An image alone in its paragraph is captioned with its title, or with its alt text when that has a space.
+- `src/data/projects.ts`: the projects, with their screenshots in `src/assets/projects/`, and which articles belong to each, by article id.
 - `docs/document-sharing.md`: how the encrypted portfolio links on `/documents/` work and how to create them.
 - `wrangler.jsonc`: the Cloudflare Worker `meaningfool`, which serves `dist/` as static assets.
 - `worker/index.js`: the only Worker code. It answers byte-range requests for the videos in `/images/`, which Safari needs to play them.

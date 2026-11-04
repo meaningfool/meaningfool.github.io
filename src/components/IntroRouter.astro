@@ -1,0 +1,32 @@
+---
+// Going between Home and About without a full page load, so that the topic map, at the same place on both pages, is
+// moved rather than drawn again, and the background with it. Layout renders this in the <head> of those two pages
+// (src/lib/intro-pages.ts). It is Astro's ClientRouter, held to them:
+// - A link between them swaps the page in place. TopicMap carries its canvas over to the next page's map, and
+//   Background keeps its element (data-astro-transition-persist); everything else is the next page's own.
+// - A link from them to any other page loads it in full, as before, without the router fetching it first. Other pages
+//   don't have the router, so they load every page in full.
+// - The page changes at once, as in the prototype: no cross-fade, and a plain swap where view transitions are missing.
+// - Nothing is prefetched (prefetch: false in astro.config.mjs), as before.
+//
+// A page's own script runs once, the first time the page is shown, and stays: a listener it adds to document or
+// window also hears the other page's events, and anything it found in the page is gone once the router swaps it.
+import { ClientRouter } from 'astro:transitions';
+---
+
+<ClientRouter fallback="swap" />
+
+<script>
+	import { isIntroPage } from '../lib/intro-pages';
+
+	document.addEventListener('astro:before-preparation', (event) => {
+		if (!isIntroPage(event.to.pathname)) event.preventDefault();
+	});
+</script>
+
+{/* Astro's transition:animate="none", for the whole page. Inline, so that only these pages have it. */}
+<style is:inline>
+	::view-transition-group(root) { animation: none; }
+	::view-transition-old(root) { animation: none; opacity: 0; mix-blend-mode: normal; }
+	::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+</style>

@@ -1,5 +1,9 @@
 ---
+import '../styles/tokens.css';
+import Background from '../components/Background.astro';
+import Frame from '../components/Frame.astro';
 import NotFound from '../components/NotFound.astro';
+import Favicons from '../components/Favicons.astro';
 ---
 
 <!doctype html>
@@ -14,7 +18,7 @@ import NotFound from '../components/NotFound.astro';
       content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-src blob:; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <title>404 - Page Not Found | meaningfool</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <Favicons />
     <style is:inline>
       #portfolio-content { display: none; }
       #portfolio-not-found { display: block; }
@@ -24,7 +28,8 @@ import NotFound from '../components/NotFound.astro';
     <script is:inline src="/portfolio-entry.js"></script>
   </head>
   <body>
-    <div id="portfolio-not-found"><NotFound /></div>
+    {/* The not-found view looks like /404.html, background included. The portfolio view keeps its plain page. */}
+    <div id="portfolio-not-found"><Background /><Frame><NotFound /></Frame></div>
     <div id="portfolio-content">
       <button id="skip-to-documents" class="skip-link" type="button">Skip to documents</button>
       <header class="page-header">
@@ -74,27 +79,17 @@ import NotFound from '../components/NotFound.astro';
 </html>
 
 <style is:global>
-  @font-face {
-    font-family: 'Space Mono';
-    src: url('/fonts/space-mono-400.woff2') format('woff2');
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-  }
-
+  /* The colours and fonts are the site's, from tokens.css. */
   :root {
-    color-scheme: light;
     background: #fff;
-    --accent: #b64b00;
-    --line: #e5e5e2;
-    --muted: #686862;
   }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   body { margin: 0; }
-  #portfolio-not-found { margin: 8px; }
-  #portfolio-content { font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #151515; font-synthesis: none; }
+  /* The not-found view looks like the site's 404 page, so it gets the base text styles that page has. */
+  #portfolio-not-found { font: 13px/1.6 var(--mono); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  #portfolio-content { font-family: var(--mono); color: #151515; font-synthesis: none; }
   #portfolio-content a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
   #portfolio-content button { font: inherit; }
   #portfolio-content button, #portfolio-content a { -webkit-tap-highlight-color: transparent; }

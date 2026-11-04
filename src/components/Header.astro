@@ -1,57 +1,53 @@
-<header>
-	<div class="container">
-		<div class="site-title"><a href="/">meaningfool</a></div>
-		<nav>
-			<a href="/about/">About</a>
-		</nav>
-	</div>
+---
+// The site header: the wordmark on the left, the navigation on the right. The current page's link is in ink,
+// underlined in the accent colour. The navigation stays visible on phones.
+import Wordmark from './Wordmark.astro';
+
+const links = [
+	{ href: '/', label: 'Home' },
+	{ href: '/about/', label: 'About' },
+];
+const here = Astro.url.pathname.replace(/\/?$/, '/');
+---
+
+<header class="head">
+	<Wordmark />
+	<nav class="nav" aria-label="Main">
+		{links.map(({ href, label }) => (
+			<a href={href} aria-current={href === here ? 'page' : undefined}>{label}</a>
+		))}
+	</nav>
 </header>
-<div class="header-separator container"></div>
 
 <style>
-	header {
-		padding: 1.25rem 0;
-	}
-
-	.header-separator {
-		border-bottom: 1px solid var(--border);
-		margin-bottom: 2rem;
-	}
-
-	.container {
+	.head {
 		display: flex;
 		justify-content: space-between;
-		align-items: baseline;
+		align-items: center;
+		gap: 16px;
+		min-height: 84px;
+		border-bottom: 1px solid var(--line);
 	}
 
-	.site-title {
-		margin: 0;
-		font-family: var(--font-title);
-		font-size: 1.5rem;
-		font-weight: var(--font-weight-medium);
-		line-height: 1;
+	.nav {
+		display: flex;
+		gap: 22px;
+		font-size: 13px;
 	}
 
-	.site-title a {
-		color: var(--text);
+	.nav a {
+		color: var(--muted);
 		text-decoration: none;
 	}
 
-	nav a {
-		color: var(--accent);
-		text-decoration: none;
-		font-size: 1rem;
-		line-height: 1;
+	.nav a:hover {
+		color: var(--ink);
 	}
 
-	nav a:hover {
-		color: var(--accent-hover);
+	.nav a[aria-current='page'] {
+		color: var(--ink);
 		text-decoration: underline;
-	}
-
-	@media (max-width: 768px) {
-		.site-title {
-			font-size: 1rem;
-		}
+		text-decoration-color: var(--accent);
+		text-underline-offset: 6px;
 	}
 </style>

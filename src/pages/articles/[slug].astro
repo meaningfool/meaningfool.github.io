@@ -1,20 +1,57 @@
 ---
+// An article or an activity log, built from the Paper design "V2 · Article — Serif text" with its column widened to
+// 720px: the back link, the meta line, the title and the text, then the project the article belongs to and the
+// previous and next posts. The text's styles are in src/styles/prose.css.
 import type { GetStaticPaths } from 'astro';
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
-import Header from '../../components/Header.astro';
 import JsonLd from '../../components/JsonLd.astro';
+import ProjectPanel from '../../components/ProjectPanel.astro';
+import PrevNext from '../../components/PrevNext.astro';
+import { projects, projectOf } from '../../data/projects';
+import { isDailyLog } from '../../lib/posts.mjs';
+import { newestFirst } from '../../lib/sort-posts';
+import { articleMeta, postShare } from '../../lib/share';
+import { excerpt } from '../../lib/excerpt';
+import '../../styles/prose.css';
 
-export const getStaticPaths: GetStaticPaths = async () => {
-  const articles = await getCollection('writing');
-  return articles.map((article) => ({
-    params: { slug: article.id },
-    props: article,
-  }));
+type Post = CollectionEntry<'writing'>;
+
+interface Props {
+  article: Post;
+  previous?: Post;
+  next?: Post;
 }
 
-const article = Astro.props as CollectionEntry<'writing'>;
+export const getStaticPaths: GetStaticPaths = async () => {
+  const posts = await getCollection('writing');
+  const ids = new Set(posts.map((post) => post.id));
+  for (const project of projects) {
+    for (const id of project.articles) {
+      if (!ids.has(id)) console.warn(`src/data/projects.ts: ${project.name} lists an article that doesn't exist: ${id}`);
+    }
+  }
+
+  // Previous and Next go through the posts newest first: Previous is the older post, Next the newer one. Articles link
+  // to articles, as the redesigned home's Writing list (#31) holds only articles; activity logs link to activity logs.
+  return [posts.filter((post) => !isDailyLog(post)), posts.filter(isDailyLog)].flatMap((group) => {
+    const sorted = group.sort(newestFirst);
+    return sorted.map((article, index) => ({
+      params: { slug: article.id },
+      props: { article, previous: sorted[index + 1], next: sorted[index - 1] },
+    }));
+  });
+};
+
+const { article, previous, next } = Astro.props;
 const { Content } = await render(article);
+const share = postShare(article);
+
+const project = projectOf(article.id);
+// The date and reading time as the share image prints them
+const { date: dateText, minutes } = articleMeta(article);
+const description = article.data.description || excerpt(article.rendered?.html ?? '') || article.data.title;
+const date = article.data.date;
 
 // JSON-LD structured data for BlogPosting
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
@@ -27,12 +64,12 @@ const articleSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
   "headline": article.data.title,
-  "description": article.data.description || article.data.title,
-  "image": new URL('/og-default.jpg', Astro.site).toString(),
+  "description": description,
+  "image": new URL(share.path, Astro.site).toString(),
   "author": author,
   "publisher": author,
-  "datePublished": article.data.date.toISOString(),
-  "dateModified": (article.data.updated ?? article.data.date).toISOString(),
+  "datePublished": date.toISOString(),
+  "dateModified": (article.data.updated ?? date).toISOString(),
   "mainEntityOfPage": { "@type": "WebPage", "@id": canonical },
   "url": canonical
 };
@@ -40,159 +77,93 @@ const articleSchema = {
 
 <Layout
   title={`${article.data.title} | meaningfool`}
-  description={article.data.description || article.data.title}
+  description={description}
   type="article"
+  share={share}
 >
   <JsonLd data={articleSchema} />
-  <Header />
-  <main id="main" class="container">
+  <main id="main" class="post">
+    <a class="back" href="/#writing">← All writing</a>
     <article>
-      <header class="article-header">
+      <header>
+        <p class="meta">
+          <time datetime={date.toISOString().slice(0, 10)}>{dateText}</time>
+          · {minutes} min read{project && <> · <span>{project.name}</span></>}
+        </p>
         <h1>{article.data.title}</h1>
-        <time class="article-date" datetime={article.data.date.toISOString().slice(0, 10)}>{article.data.date.toLocaleDateString('en-US', {
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        })}</time>
       </header>
-      <div class="article-content">
+      <div class="prose">
         <Content />
       </div>
     </article>
+    <div class="post-end">
+      {project && <ProjectPanel project={project} />}
+      <PrevNext previous={previous} next={next} />
+    </div>
   </main>
 </Layout>
 
 <style>
-  .article-header {
-    margin: 4rem 0 2rem 0;
+  /* A centred 720px column, which the page background leaves clear of its pattern. */
+  .post {
+    width: min(720px, 100%);
+    margin-inline: auto;
+    padding-top: 64px;
   }
 
-  /* Specific selector to override global styles */
-  .article-header h1 {
-    margin-bottom: 0.75rem;
-    font-size: 2.25rem;
-    line-height: 1.2;
-    position: relative;
-    text-indent: 0;
-    padding-left: 0;
+  .back {
+    display: block;
+    width: fit-content;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--muted);
+    text-decoration: none;
   }
 
-  /* Hanging # using absolute positioning */
-  .article-header h1::before {
-    position: absolute;
-    left: -2rem; /* Adjusted to hang in the margin */
-    content: "# ";
+  .back:hover {
+    color: var(--ink);
+  }
+
+  .meta {
+    padding-top: 44px;
+    font-size: 12px;
+    line-height: 18px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .meta span {
     color: var(--accent);
   }
 
-  .article-date {
-    color: var(--muted);
-    font-size: 1rem;
-    margin-top: 0;
-    display: block;
-    font-family: 'Poppins', sans-serif;
+  h1 {
+    margin: 0;
+    padding-top: 14px;
+    font-weight: 400;
+    font-size: 38px;
+    line-height: 48px;
+    letter-spacing: -0.05em;
+    text-wrap: balance;
   }
 
-  .article-content {
-    padding: 1rem 0 4rem 0;
-    font-family: 'Poppins', sans-serif;
+  .prose {
+    padding-top: 44px;
   }
 
-  /* Explicitly force Poppins on children to override global body font */
-  .article-content :global(p),
-  .article-content :global(ul),
-  .article-content :global(ol),
-  .article-content :global(li),
-  .article-content :global(blockquote) {
-    font-family: 'Poppins', sans-serif;
+  .post-end {
+    display: grid;
+    gap: 36px;
+    padding-top: 72px;
   }
 
-  .article-content :global(strong),
-  .article-content :global(b) {
-    font-weight: 500;
-  }
-
-  .article-content :global(h1) {
-    display: none;
-  }
-
-  .article-content :global(h2) {
-    margin: 4rem 0 1.5rem 0;
-    font-size: 1.75rem;
-  }
-
-  /* Smart spacing: if heading is first child, remove top margin */
-  .article-content :global(h2:first-child),
-  .article-content :global(h1 + h2),
-  .article-content :global(h3:first-child),
-  .article-content :global(h1 + h3) {
-    margin-top: 0;
-  }
-
-  .article-content :global(h3) {
-    margin: 3rem 0 1rem 0;
-    font-size: 1.4rem;
-  }
-
-  .article-content :global(h4),
-  .article-content :global(h5),
-  .article-content :global(h6) {
-    margin: 2rem 0 0.75rem 0;
-  }
-
-  .article-content :global(p) {
-    margin: 0 0 2rem 0;
-    line-height: 1.8;
-  }
-
-  /* Remove bottom margin from paragraph when followed by a list */
-  .article-content :global(p:has(+ ul)),
-  .article-content :global(p:has(+ ol)) {
-    margin-bottom: 0;
-  }
-
-  .article-content :global(ul),
-  .article-content :global(ol) {
-    margin: 0 0 2rem 0;
-  }
-
-  .article-content :global(li) {
-    margin-bottom: 0;
-    line-height: 1.8;
-  }
-
-  .article-content :global(img) {
-    margin: 3rem auto;
-    display: block;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-
-  .article-content :global(blockquote) {
-    margin: 2rem 0;
-    padding: 1.5rem 2rem;
-    background: #f9f9f9;
-    border-left: 4px solid var(--accent);
-  }
-
-  @media (max-width: 768px) {
-    .article-header {
-      margin: 2rem 0;
-      text-align: left;
+  @media (max-width: 900px) {
+    .post {
+      padding-top: 40px;
     }
 
-    /* Mobile: Reset position for smaller screens if needed, 
-       but left-align is usually preferred now */
-    .article-header h1 {
-      font-size: 1.6rem;
-    }
-
-    .article-content {
-      padding: 0 0 2rem 0;
-    }
-    
-    .article-content :global(h2) {
-      margin-top: 3rem;
-      font-size: 1.5rem;
+    h1 {
+      font-size: 28px;
+      line-height: 36px;
     }
   }
 </style>

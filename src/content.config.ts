@@ -2,6 +2,7 @@ import { defineCollection } from 'astro:content';
 import { z } from 'astro/zod';
 import { glob } from 'astro/loaders';
 import { postId } from './lib/posts.mjs';
+import { TOPICS } from './data/topics';
 
 const writing = defineCollection({
   loader: glob({
@@ -23,6 +24,9 @@ const writing = defineCollection({
     updated: z.date().optional(),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    // The topics an article is about, each one 30% or more of it: customer-success, product, ai-agents. The home's
+    // topic map filters Writing with them. Articles without the field take theirs from src/data/topics.ts.
+    topics: z.array(z.enum(TOPICS)).optional(),
   }),
 });
 
