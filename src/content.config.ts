@@ -25,7 +25,8 @@ const writing = defineCollection({
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
     // The topics an article is about, each one 30% or more of it: customer-success, product, ai-agents. The home's
-    // topic map filters Writing with them. Articles without the field take theirs from src/data/topics.ts.
+    // topic map filters Writing with them. Activity logs don't need the field; the home warns about an article
+    // without it.
     topics: z.array(z.enum(TOPICS)).optional(),
   }),
 });

@@ -1,7 +1,8 @@
 ---
 // The home: the intro beside the topic map, then Projects and Writing. Writing lists the articles, newest first; the
 // activity logs aren't listed, but their pages keep their URLs. Picking an orange dot on the map shows only the
-// articles about its topic (src/data/topics.ts), and picking it again, or "Show all", shows them all again.
+// articles about its topic (each article's `topics` frontmatter field), and picking it again, or "Show all", shows
+// them all again.
 import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
@@ -9,7 +10,7 @@ import Intro from '../components/Intro.astro';
 import JsonLd from '../components/JsonLd.astro';
 import { projects, projectOf } from '../data/projects';
 import { profiles } from '../data/profiles';
-import { TOPIC_NAMES, topicsOf, unknownTopicIds } from '../data/topics';
+import { TOPIC_NAMES } from '../data/topics';
 import { newestFirst } from '../lib/sort-posts';
 import { readingMinutes } from '../lib/reading-time.mjs';
 import { HOME_INTRO, articlesOnly, plural } from '../lib/share';
@@ -19,11 +20,8 @@ const description =
 	"Josselin Perrus's site: a product manager in Paris building AI products with AI agents. His projects, and writing on customer success, product and AI agents.";
 
 const articles = articlesOnly(await getCollection('writing')).sort(newestFirst);
-for (const id of unknownTopicIds(articles.map((article) => article.id))) {
-	console.warn(`src/data/topics.ts gives topics to an article that doesn't exist: ${id}`);
-}
 const rows = articles.map((article) => {
-	const topics = topicsOf(article);
+	const topics = article.data.topics;
 	// At 30% or more, every article has at least one topic: three shares under 30% can't make a whole.
 	if (!topics?.length) console.warn(`"${article.id}" has no topics, so picking a topic on the home's map hides it: give it a topics field.`);
 	return {
