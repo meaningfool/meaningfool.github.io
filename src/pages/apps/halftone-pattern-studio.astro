@@ -1,0 +1,857 @@
+---
+// The Halftone Pattern Studio: generate halftone rings and bands, place them on a page and export them. It runs entirely
+// in the browser and keeps the saved patterns there (localStorage). It opens on the site's own corner pattern.
+import App from '../../layouts/App.astro';
+---
+
+<App title="Halftone Pattern Studio | meaningfool" description="Generate halftone rings and bands, place and rotate them on a page, then export them as PNG, SVG or JSON. It runs in your browser.">
+<canvas id="canvas" aria-label="The pattern on its page. Drag to move the view, or drag the orange pin to move the pattern."></canvas>
+
+<div class="stack">
+  <aside class="panel island" id="panel" aria-label="Controls">
+    <h1><a href="/apps/" title="All apps">Halftone pattern studio<span>.</span></a></h1>
+    <section>
+      <h2>Form</h2>
+      <div class="tools" role="group" aria-label="Form">
+        <button type="button" data-form="rings"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-9-9"/><path d="M21 18A15 15 0 0 1 6 3"/></svg>Rings</button>
+        <button type="button" data-form="bands"><svg viewBox="0 0 24 24"><path d="M3 10c5-6 8 6 18 0"/><path d="M3 16c5-6 8 6 18 0"/></svg>Bands</button>
+      </div>
+    </section>
+    <section class="where" data-guides>
+      <h2>Place</h2>
+      <div class="place" id="places" role="group" aria-label="Place on the page"></div>
+      <div class="rows">
+        <div class="row" title="Turns the pattern around the orange pin, counterclockwise above 0"><label for="rotate">Rotate</label><input id="rotate" type="range"><output for="rotate"></output></div>
+        <div class="row" id="dist-row" title="From the orange pin to the nearest band"><label for="dist">Distance</label><input id="dist" type="range" min="0" max="600"><output for="dist"></output></div>
+      </div>
+    </section>
+    <section data-guides>
+      <h2 id="count-label">How many rings</h2>
+      <div class="seg" id="counts" role="group" aria-labelledby="count-label"></div>
+      <div class="row" title="The room from one to the next. 100 is the pattern as it was drawn"><label for="gap">Gap</label><input id="gap" type="range" min="0" max="300"><output for="gap"></output></div>
+    </section>
+    <section>
+      <h2>Pattern</h2>
+      <div class="row"><label for="size">Size</label><input id="size" type="range" min="40" max="200"><output for="size"></output></div>
+      <div class="row"><label for="twist">Twist</label><input id="twist" type="range" min="0" max="200"><output for="twist"></output></div>
+      <div class="row"><label for="fade">Fade</label><input id="fade" type="range" min="0" max="100"><output for="fade"></output></div>
+    </section>
+    <section>
+      <h2>Dots</h2>
+      <div class="row"><label for="spacing">Spacing</label><input id="spacing" type="range" min="4" max="20"><output for="spacing"></output></div>
+      <div class="row"><label for="soft">Softness</label><input id="soft" type="range" min="0" max="100"><output for="soft"></output></div>
+    </section>
+    <section>
+      <h2>Export</h2>
+      <div class="exports" role="group" aria-label="Export">
+        <button type="button" data-export="png" title="Image with a transparent background">PNG</button>
+        <button type="button" data-export="svg" title="Vector dots, for Figma or Illustrator">SVG</button>
+        <button type="button" data-export="json" title="Every setting and curve, for code">JSON</button>
+      </div>
+    </section>
+  </aside>
+  <div class="island group zoom">
+    <button class="tb" id="zoom-out" type="button" aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+    <button class="pct" id="zoom-pct" type="button" aria-label="Fit the page" title="Fit the page">100%</button>
+    <button class="tb" id="zoom-in" type="button" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M6 12h12M12 6v12"/></svg></button>
+  </div>
+</div>
+
+<div class="top" id="top">
+  <div class="island group">
+    <button class="tb" id="undo" type="button" aria-label="Undo" title="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button class="tb" id="redo" type="button" aria-label="Redo" title="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+  </div>
+  <div class="island group">
+    <button class="tb" id="regenerate" type="button" aria-label="New pattern" title="New pattern"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg></button>
+  </div>
+  <div class="island group to-saved">
+    <button class="tb" id="like" type="button" aria-label="Save" title="Save" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></button>
+    <button class="nav" id="to-saved" type="button"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>Saved <b id="saved-count">0</b></button>
+  </div>
+</div>
+<div class="caption" id="caption" role="status"></div>
+
+<section class="saved-screen" id="saved" aria-label="Saved patterns" hidden>
+  <div class="saved-head">
+    <button class="island nav back" id="back" type="button"><svg viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Back</button>
+    <h1>Saved <span id="saved-total">0</span></h1>
+  </div>
+  <p class="empty" id="empty">Nothing saved yet. Press the heart on a pattern to keep it here.</p>
+  <div class="grid" id="grid"></div>
+</section>
+</App>
+
+<style is:global>
+/* Layout: one full-screen canvas with the page on it; the panel at the top left, a row of actions beside it, and a second screen for saved patterns. */
+:root {
+  --ground: #e8e7e1;
+  --island: #ffffff;
+  --line: #e2e1db;
+  --edge: #d3d2cb;
+  --fg: #1b1b19;
+  --muted: #6c6b64;
+  --hover: #f1f0eb;
+  --faint: #c9c8c0;
+  --accent: #b64b00;
+  --on-accent: #ffffff;
+  --tint: #fbeee3;
+  --sheet-shadow: rgba(27, 27, 25, 0.14);
+  --shadow: 0 0 0 1px rgba(27, 27, 25, 0.06), 0 1px 2px rgba(27, 27, 25, 0.06), 0 6px 16px rgba(27, 27, 25, 0.07);
+  --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --panel: 248px;
+  --dock: 0px;
+  --left: calc(24px + var(--panel) + env(safe-area-inset-left, 0px));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --ground: #141413; --island: #232321; --line: #363631; --edge: #4a4a44; --fg: #ecebe6; --muted: #a3a29a; --hover: #2e2e2b; --faint: #55554e; --accent: #e8894a; --on-accent: #1b1b19; --tint: #3b2719; --sheet-shadow: rgba(0, 0, 0, 0.6); --shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 6px 18px rgba(0, 0, 0, 0.45); color-scheme: dark; }
+}
+:root[data-theme="dark"] { --ground: #141413; --island: #232321; --line: #363631; --edge: #4a4a44; --fg: #ecebe6; --muted: #a3a29a; --hover: #2e2e2b; --faint: #55554e; --accent: #e8894a; --on-accent: #1b1b19; --tint: #3b2719; --sheet-shadow: rgba(0, 0, 0, 0.6); --shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 6px 18px rgba(0, 0, 0, 0.45); color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--ground); color: var(--fg); font: 13px/1.4 var(--ui); -webkit-font-smoothing: antialiased; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+#canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.island { background: var(--island); border-radius: 10px; box-shadow: var(--shadow); }
+.group { display: flex; align-items: center; gap: 2px; padding: 4px; flex: none; }
+.tb { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; cursor: pointer; }
+.tb svg { width: 20px; height: 20px; }
+.tb:hover { background: var(--hover); }
+.tb[disabled] { opacity: 0.35; cursor: default; background: transparent; }
+.tb[aria-pressed="true"] { color: var(--accent); }
+.tb[aria-pressed="true"] svg { fill: var(--accent); }
+.pct { min-width: 54px; height: 36px; border: 0; border-radius: 7px; background: transparent; font-size: 12px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.pct:hover { background: var(--hover); }
+
+.stack { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); z-index: 10; width: var(--panel); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; pointer-events: none; }
+.stack > * { pointer-events: auto; }
+.zoom { margin-top: auto; }
+.panel { width: 100%; min-height: 0; overflow-y: auto; padding: 12px; display: grid; align-content: start; gap: 14px; }
+.panel h1 { margin: 0; font-size: 13px; font-weight: 600; }
+.panel h1 span { color: var(--accent); }
+.panel h1 a { color: inherit; text-decoration: none; }
+.panel h1 a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.panel h2 { margin: 0 0 7px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.tools { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; padding: 2px; border-radius: 8px; background: var(--hover); }
+.tools button { display: grid; justify-items: center; gap: 2px; padding: 7px 2px 5px; border: 0; border-radius: 6px; background: transparent; font-size: 12px; cursor: pointer; }
+.tools svg { width: 20px; height: 20px; }
+.tools button:hover { background: var(--island); }
+.tools button[aria-pressed="true"] { background: var(--tint); color: var(--accent); }
+.seg { display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--hover); }
+.seg button { flex: 1; min-height: 32px; padding: 4px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; display: grid; place-items: center; }
+.seg button[aria-pressed="true"] { background: var(--island); color: var(--fg); box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(27, 27, 25, 0.08); }
+.place { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 2px; padding: 2px; height: 96px; border-radius: 8px; background: var(--hover); }
+.place button { padding: 0; border: 0; border-radius: 5px; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.place button:hover { background: var(--island); }
+.place i { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); }
+.place button[aria-pressed="true"] { background: var(--tint); }
+.place button[aria-pressed="true"] i { width: 10px; height: 10px; background: var(--accent); }
+.row { display: grid; grid-template-columns: 62px minmax(0, 1fr) 36px; align-items: center; gap: 8px; min-height: 26px; font-size: 12px; }
+.row label { color: var(--muted); }
+.row output { text-align: right; font-variant-numeric: tabular-nums; }
+.row input { width: 100%; margin: 0; accent-color: var(--accent); }
+.row:has(input:disabled) { opacity: 0.45; }
+.rows, .seg + .row { margin-top: 6px; }
+.exports { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.exports button, .formats button { min-height: 32px; border: 1px solid var(--edge); border-radius: 8px; background: var(--island); font-size: 12px; cursor: pointer; }
+.exports button:hover, .formats button:hover { border-color: var(--accent); background: var(--tint); }
+
+.top { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: var(--left); right: calc(12px + env(safe-area-inset-right, 0px)); z-index: 10; display: flex; align-items: center; gap: 8px; pointer-events: none; }
+.top > * { pointer-events: auto; }
+.nav { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border: 0; font-size: 13px; cursor: pointer; }
+.nav svg { width: 20px; height: 20px; }
+.group .nav { height: 36px; padding: 0 10px; border-radius: 7px; background: transparent; }
+.group .nav:hover { background: var(--hover); }
+.to-saved { margin-left: auto; }
+.to-saved b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--accent); }
+.back { padding-left: 10px; }
+.caption { position: fixed; left: var(--left); bottom: calc(9px + env(safe-area-inset-bottom, 0px)); z-index: 5; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; pointer-events: none; }
+
+.saved-screen { position: fixed; inset: 0; z-index: 20; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; background: var(--ground); padding: calc(12px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
+.saved-head { display: flex; align-items: center; gap: 14px; }
+.saved-head h1 { margin: 0; font-size: 13px; font-weight: 600; }
+.saved-head span { margin-left: 4px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 24px 20px; }
+.card { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.card figcaption { font-size: 12px; color: var(--muted); }
+.sheet { position: relative; aspect-ratio: 16 / 10; max-width: 100%; }
+.pick { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; box-shadow: 0 2px 12px var(--sheet-shadow); cursor: pointer; transition: box-shadow 0.12s, transform 0.12s; }
+@media (hover: hover) { .pick[aria-expanded="false"]:hover { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 50%, transparent), 0 10px 24px var(--sheet-shadow); transform: translateY(-2px); } }
+.pick[aria-expanded="true"] { box-shadow: 0 0 0 2px var(--accent); }
+.pick canvas { display: block; width: 100%; height: 100%; }
+.options { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 8px; display: grid; gap: 6px; }
+.load { min-height: 34px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 600; cursor: pointer; }
+.formats { display: grid; grid-template-columns: auto repeat(3, 1fr); align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.formats button { min-height: 30px; padding: 0; color: var(--fg); }
+.empty { margin: 0; max-width: 40ch; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { .pick { transition: none; } .pick[aria-expanded="false"]:hover { transform: none; } }
+
+/* Narrow screens: the panel becomes a strip along the bottom that scrolls sideways. */
+@media (max-width: 719px) {
+  :root { --dock: 150px; --left: calc(12px + env(safe-area-inset-left, 0px)); }
+  .stack { top: auto; bottom: calc(var(--dock) + 12px + env(safe-area-inset-bottom, 0px)); width: auto; flex-direction: row; }
+  .zoom { margin-top: 0; }
+  .panel { position: fixed; right: 0; bottom: 0; left: 0; width: auto; height: calc(var(--dock) + env(safe-area-inset-bottom, 0px)); border-radius: 12px 12px 0 0; display: flex; gap: 20px; overflow: auto hidden; padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .panel h1 { flex: none; width: 76px; }
+  .panel section { flex: none; width: 170px; }
+  .panel .where { width: 300px; display: grid; grid-template-columns: 96px minmax(0, 1fr); column-gap: 12px; align-content: start; }
+  .where h2 { grid-column: 1 / -1; }
+  .where .rows { margin-top: 0; }
+  .caption { right: calc(12px + env(safe-area-inset-right, 0px)); left: auto; bottom: calc(var(--dock) + 26px + env(safe-area-inset-bottom, 0px)); }
+}
+</style>
+
+<script>
+/* A pattern is a bundle of lines blended between five curves. Where the bundle folds over itself the lines pile up
+   into a crease. The ink is the lines' density, blurred a touch, printed as round dots on a turned hex grid.
+   Rings bend the lines around a pin; bands run them straight, a set distance from it. Either way they turn around the pin. */
+const W = 1440, H = 900; // the page, in pixels
+const PAPER = '#f5f4ef', INK = '#2b2b2b', PNG_SCALE = 2, ANGLE = 14;
+// Darkness response measured on the reference prints: line density, blur in dot spacings, tone curve.
+const FIT = {
+  dens: 0.1407, gain: 0.784, gamma: 0.7615,
+  tone: [[0, 0], [0.203, 0.179], [0.225, 0.195], [0.257, 0.223], [0.295, 0.285], [0.331, 0.33], [0.381, 0.413], [0.427, 0.44], [0.451, 0.46],
+    [0.468, 0.483], [0.49, 0.507], [0.519, 0.542], [0.554, 0.59], [0.6, 0.646], [0.649, 0.712], [0.717, 0.841], [0.763, 0.956], [1, 1]],
+};
+// The rings on meaningfool.net, number 71: each ring's five curves give the distance from the pin, in reaches, at nine angles.
+const SITE_NUMBER = 71, SITE_RINGS = [
+  [[0.204, 0.197, 0.189, 0.185, 0.186, 0.195, 0.208, 0.224, 0.238], [0.156, 0.201, 0.285, 0.368, 0.411, 0.394, 0.325, 0.236, 0.17], [0.495, 0.582, 0.617, 0.583, 0.496, 0.394, 0.321, 0.311, 0.37], [0.463, 0.413, 0.369, 0.34, 0.33, 0.342, 0.373, 0.419, 0.471], [0.483, 0.465, 0.448, 0.439, 0.441, 0.453, 0.471, 0.486, 0.494]],
+  [[0.442, 0.458, 0.485, 0.516, 0.541, 0.555, 0.555, 0.542, 0.522], [0.713, 0.716, 0.714, 0.699, 0.668, 0.618, 0.552, 0.476, 0.401], [0.664, 0.68, 0.689, 0.685, 0.663, 0.624, 0.57, 0.51, 0.457], [0.475, 0.416, 0.365, 0.328, 0.31, 0.313, 0.336, 0.374, 0.422], [0.77, 0.775, 0.787, 0.802, 0.814, 0.818, 0.813, 0.801, 0.787]],
+  [[0.8, 0.804, 0.82, 0.843, 0.863, 0.874, 0.869, 0.849, 0.822], [0.622, 0.751, 0.898, 1.033, 1.129, 1.168, 1.147, 1.072, 0.96], [0.968, 1.061, 1.188, 1.306, 1.376, 1.377, 1.308, 1.192, 1.067], [1.407, 1.413, 1.397, 1.354, 1.286, 1.202, 1.113, 1.034, 0.979], [1.068, 1.097, 1.121, 1.131, 1.124, 1.101, 1.071, 1.043, 1.027]],
+];
+const Q = Math.PI / 2;
+// The nine places, each a spot for the pin as a share of the page. Rings: the direction their curves start from, which way they turn and how far.
+// Bands: the angle they take there, counterclockwise, and which way they stack from the pin (1 down the page, -1 up it).
+const PLACES = {
+  'top-left': { label: 'Top left', x: 0, y: 0, from: 0, turn: 1, sweep: Q, lean: 45, side: 1 },
+  top: { label: 'Top', x: 0.5, y: 0, from: 2 * Q, turn: -1, sweep: 2 * Q, lean: 0, side: 1 },
+  'top-right': { label: 'Top right', x: 1, y: 0, from: 2 * Q, turn: -1, sweep: Q, lean: -45, side: 1 },
+  left: { label: 'Left', x: 0, y: 0.5, from: -Q, turn: 1, sweep: 2 * Q, lean: 90, side: 1 },
+  middle: { label: 'Middle', x: 0.5, y: 0.5, from: 2 * Q, turn: -1, sweep: 4 * Q, lean: 0, side: 1 },
+  right: { label: 'Right', x: 1, y: 0.5, from: -Q, turn: -1, sweep: 2 * Q, lean: -90, side: 1 },
+  'bottom-left': { label: 'Bottom left', x: 0, y: 1, from: 0, turn: -1, sweep: Q, lean: -45, side: -1 },
+  bottom: { label: 'Bottom', x: 0.5, y: 1, from: 2 * Q, turn: 1, sweep: 2 * Q, lean: 0, side: -1 },
+  'bottom-right': { label: 'Bottom right', x: 1, y: 1, from: 2 * Q, turn: 1, sweep: Q, lean: 45, side: -1 },
+};
+// From one band's axis to the next, in page heights at size 100 and gap 100, and from the pin to the first, in pixels.
+const BAND_GAP = 0.26, BAND_DIST = 225;
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+
+/* ---------- Random curves: the same number always gives the same pattern ---------- */
+function randoms(seed) {
+  let a = Math.imul(seed, 2654435761) >>> 0;
+  const next = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  return (lo, hi) => lo + (hi - lo) * next();
+}
+const nine = (f) => Array.from({ length: 9 }, (_, i) => f(i / 8));
+// Bands run on a page width past either side, so there is enough of them once they turn.
+const longer = (f) => Array.from({ length: 25 }, (_, i) => f(i / 8 - 1));
+const meanOf = (vs) => vs.reduce((a, b) => a + b, 0) / vs.length;
+const wave = (r, amp, lo, hi) => { const a = r(-amp, amp), k = r(lo, hi), p = r(0, 6.3); return (u) => a * Math.sin(2 * Math.PI * k * u + p); };
+function randomRing(r, j) {
+  const centre = 0.34 + j * 0.3, thick = 0.2 * (1 + 0.25 * j), drift = wave(r, 0.04, 0.3, 0.9);
+  return [0, 1, 2, 3, 4].map((k) => {
+    const edge = k === 0 || k === 4;
+    const off = edge ? (k === 0 ? -0.5 : 0.5) * thick + r(-0.15, 0.15) * thick : r(-0.9, 0.9) * thick;
+    const amp = (edge ? r(0.05, 0.15) : r(0.4, 1.1)) * thick, k2 = r(0.3, 0.9), p = r(0, 6.3);
+    return nine((u) => centre + drift(u) + off + amp * Math.sin(2 * Math.PI * k2 * u + p));
+  });
+}
+function randomBand(r) {
+  const lean = r(-0.25, 0.25), at = 0.5 + r(-0.15, 0.15), drift = wave(r, 0.1, 0.4, 1.1);
+  return [0, 1, 2, 3, 4].map((k) => {
+    const edge = k === 0 || k === 4;
+    const off = edge ? r(-0.14, 0.14) : r(-0.3, 0.3);
+    const amp = edge ? r(0.03, 0.08) : r(0.12, 0.32), k2 = r(0.6, 1.6), p = r(0, 6.3);
+    return longer((u) => at + lean * (u - 0.5) + drift(u) + off + amp * Math.sin(2 * Math.PI * k2 * u + p));
+  });
+}
+// A bundle's axis is the average of its lines. Each of the five curves carries a fifth of them, so it's the curves' average.
+const axisOf = (curves) => curves[0].map((_, i) => meanOf(curves.map((c) => c[i])));
+// The straight line closest to a band's axis across the page comes off every curve, so zero is the axis and Rotate 0 lies flat.
+function flattened(curves) {
+  const axis = axisOf(curves).slice(8, 17), level = meanOf(axis), slope = axis.reduce((s, y, i) => s + (i - 4) * (y - level), 0) / 60;
+  return curves.map((c) => c.map((y, i) => y - level - slope * (i - 12)));
+}
+// Where each band sits from the first, in gaps. In the middle of the page the group is centred on the pin, darkest band inside.
+function stackOf(p) {
+  if (p.place !== 'middle') return [0, 1, 2, 3].slice(0, p.count);
+  const s = [0, 1, -1, 2].slice(0, p.count), centre = (Math.max(...s) + Math.min(...s)) / 2;
+  return s.map((g) => g - centre);
+}
+const offsetsOf = (p) => stackOf(p).map((g) => g * BAND_GAP * p.gap / 100);
+// Each bundle's five curves, inner first, with its share of the ink and how far it moves from where it was drawn.
+function bundles(p) {
+  const r = randoms(p.seed), rings = p.form === 'rings', made = Array.from({ length: p.count }, (_, j) => {
+    const drawn = rings ? randomRing(r, j) : randomBand(r), site = rings && p.seed === SITE_NUMBER && j < SITE_RINGS.length;
+    const curves = twisted(site ? SITE_RINGS[j] : drawn, p.twist);
+    return { curves: rings ? curves : flattened(curves), ink: (p.fade / 100) ** j };
+  });
+  // Rings spread out from the innermost one, whose axis stays put.
+  const level = (b) => meanOf(axisOf(b.curves)), offs = rings ? made.map((b) => (p.gap / 100 - 1) * (level(b) - level(made[0]))) : offsetsOf(p);
+  return made.map((b, j) => ({ ...b, off: offs[j] }));
+}
+// Twist scales how far the inner curves swing from the edges' midline.
+function twisted(curves, pct) {
+  const n = curves.length - 1, tw = pct / 100;
+  return curves.map((cv, k) => cv.map((y, i) => {
+    const mid = (curves[0][i] + curves[n][i]) / 2;
+    return k === 0 || k === n ? y : mid + (y - mid) * tw;
+  }));
+}
+// Smooth curve through values at evenly spaced points (Catmull-Rom). Clamped ends, or joined up all the way round.
+function curve(vs, closed, back = 0) {
+  const n = vs.length - 1, at = closed ? (i) => vs[(i + n) % n] : (i) => vs[clamp(i, 0, n)];
+  const drawn = (u) => {
+    const i = clamp(Math.floor(u * n), 0, n - 1), t = clamp(u * n - i, 0, 1);
+    const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2);
+    return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+  };
+  if (!back) return drawn;
+  // Past its end, one cubic takes the curve the rest of the way round the pin, leaving and arriving at the slopes it has there.
+  const a = vs[n], b = vs[0], ta = back * n * (vs[n] - vs[n - 1]) / 2, tb = back * n * (vs[1] - vs[0]) / 2;
+  return (u) => {
+    if (u <= 1) return drawn(u);
+    const t = (u - 1) / back, t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * a + (t3 - 2 * t2 + t) * ta + (3 * t2 - 2 * t3) * b + (t3 - t2) * tb;
+  };
+}
+
+/* ---------- From curves to dots. Each bundle's ink is kept, so moving a slider usually redoes only the layout ---------- */
+const SAMPLES = 1200; // points along each line of a bundle
+// The ink of one bundle: columns along it from u0 to u1, rows across it from v0, in reaches from the pin or page heights from the axis.
+const GRID = {
+  rings: { cols: 720, rows: 1200, u0: 0, u1: 1, v0: 0, row: 0.002 },
+  bands: { cols: 1080, rows: 960, u0: -1, u1: 2, v0: -1.2, row: 0.0025 },
+};
+const BACK_COLS = 360; // columns per sweep for the rest of the way round the pin, where the curves are gentler
+const BERN = (() => {
+  const b = new Float32Array(SAMPLES * 5), binom = [1, 4, 6, 4, 1];
+  for (let j = 0; j < SAMPLES; j++) { const s = (j + 0.5) / SAMPLES; for (let k = 0; k <= 4; k++) b[j * 5 + k] = binom[k] * s ** k * (1 - s) ** (4 - k); }
+  return b;
+})();
+const isClosed = (p) => p.form === 'rings' && PLACES[p.place].sweep > 6;
+// How many sweeps it takes rings to get back to their start: 3 from a corner, 1 from an edge, none in the middle.
+const backOf = (p) => (p.form === 'rings' ? Math.round(2 * Math.PI / PLACES[p.place].sweep) - 1 : 0);
+const widthOf = (p) => GRID[p.form].cols + BACK_COLS * backOf(p);
+// One bundle's ink: every sample of its lines drops a share between two rows, and the pile-up becomes a darkness.
+function inkOf({ curves, ink }, p) {
+  const { cols, rows, v0, row } = GRID[p.form], back = backOf(p), width = widthOf(p), acc = new Float32Array(width * rows), cv = new Float32Array(5);
+  const fs = curves.map((c) => curve(c, isClosed(p), back)), share = FIT.dens * ink / SAMPLES / row;
+  for (let c = 0; c < width; c++) {
+    const u = c < cols ? (c + 0.5) / cols : 1 + (c - cols + 0.5) / BACK_COLS;
+    for (let k = 0; k < 5; k++) cv[k] = fs[k](u);
+    for (let j = 0; j < SAMPLES; j++) {
+      const o = j * 5, y = BERN[o] * cv[0] + BERN[o + 1] * cv[1] + BERN[o + 2] * cv[2] + BERN[o + 3] * cv[3] + BERN[o + 4] * cv[4];
+      const fy = (y - v0) / row - 0.5, i0 = Math.floor(fy), t = fy - i0;
+      if (i0 >= 0 && i0 < rows) acc[i0 * width + c] += (1 - t) * share;
+      if (i0 + 1 >= 0 && i0 + 1 < rows) acc[(i0 + 1) * width + c] += t * share;
+    }
+  }
+  for (let i = 0; i < acc.length; i++) acc[i] = 1 - Math.exp(-acc[i]);
+  return acc;
+}
+function layersOf(p, mem) {
+  mem.layers ||= [];
+  return bundles(p).map((b, j) => {
+    const key = [p.form, p.seed, j, p.twist, backOf(p), b.ink].join();
+    if (mem.layers[j]?.key !== key) mem.layers[j] = { key, ink: inkOf(b, p) };
+    return { ink: mem.layers[j].ink, off: b.off };
+  });
+}
+const pinOf = (p) => { const s = PLACES[p.place]; return [s.x * W + p.dx, s.y * H + p.dy]; };
+// How bands lie: the pin, the way along them, the way across them away from the pin, how far off the first one is, and their scale.
+function frameOf(p) {
+  const [x, y] = pinOf(p), a = p.rotate * Math.PI / 180, side = PLACES[p.place].side;
+  return { x, y, ax: Math.cos(a), ay: -Math.sin(a), nx: side * Math.sin(a), ny: side * Math.cos(a), dist: p.place === 'middle' ? 0 : p.dist, k: H * p.size / 100 };
+}
+// Where a point of the page falls on a bundle: its column, and how far out it is before the bundle's own offset.
+function mapper(p) {
+  const { cols, u0, u1 } = GRID[p.form];
+  if (p.form === 'bands') {
+    const { x: px, y: py, ax, ay, nx, ny, dist, k } = frameOf(p);
+    return (x, y) => {
+      const dx = x - px, dy = y - py;
+      return [(0.5 + (dx * ax + dy * ay) / W - u0) / (u1 - u0) * cols - 0.5, (dx * nx + dy * ny - dist) / k];
+    };
+  }
+  const { from, turn, sweep } = PLACES[p.place], [ax, ay] = pinOf(p), R = H * p.size / 100, TAU = 2 * Math.PI, spin = p.rotate * Math.PI / 180;
+  return (x, y) => {
+    const dx = x - ax, dy = y - ay;
+    let a = turn * (Math.atan2(dy, dx) + spin - from) % TAU;
+    if (a < 0) a += TAU;
+    const t = a / sweep;
+    return [(t <= 1 ? t * cols : cols + (t - 1) * BACK_COLS) - 0.5, Math.hypot(dx, dy) / R];
+  };
+}
+function blurred(src, cols, rows, sigma) {
+  const r = Math.ceil(3 * sigma), k = [];
+  for (let j = -r; j <= r; j++) k.push(Math.exp(-(j * j) / (2 * sigma * sigma)));
+  const sum = k.reduce((a, b) => a + b, 0), tmp = new Float32Array(src.length), out = new Float32Array(src.length);
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    let s = 0;
+    for (let j = Math.max(-r, -x); j <= Math.min(r, cols - 1 - x); j++) s += src[y * cols + x + j] * k[j + r];
+    tmp[y * cols + x] = s / sum;
+  }
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    let s = 0;
+    for (let j = Math.max(-r, -y); j <= Math.min(r, rows - 1 - y); j++) s += tmp[(y + j) * cols + x] * k[j + r];
+    out[y * cols + x] = s / sum;
+  }
+  return out;
+}
+// The bundles laid out on the page, on a grid of a quarter of the dot spacing, then blurred.
+function fieldOf(p, layers) {
+  const cell = Math.max(1.5, p.spacing / 4), cols = Math.ceil(W / cell), rows = Math.ceil(H / cell), f = new Float32Array(cols * rows);
+  const map = mapper(p), round = p.form === 'rings', g = GRID[p.form], n = widthOf(p);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const [fu0, out] = map((c + 0.5) * cell, (r + 0.5) * cell);
+    const fu = round ? (fu0 + n) % n : clamp(fu0, 0, n - 1.001), u0 = Math.floor(fu), u1 = round ? (u0 + 1) % n : u0 + 1, tu = fu - u0;
+    let clear = 1;
+    for (const { ink, off } of layers) {
+      const fv = (out - off - g.v0) / g.row - 0.5;
+      if (fv < 0 || fv >= g.rows - 1) continue;
+      const v0 = Math.floor(fv), tv = fv - v0, a = v0 * n, b = a + n;
+      clear *= 1 - (ink[a + u0] * (1 - tu) * (1 - tv) + ink[a + u1] * tu * (1 - tv) + ink[b + u0] * (1 - tu) * tv + ink[b + u1] * tu * tv);
+    }
+    f[r * cols + c] = 1 - clear;
+  }
+  const sigma = p.soft / 100 * p.spacing / cell;
+  return { f: sigma > 0.05 ? blurred(f, cols, rows, sigma) : f, cell, cols, rows };
+}
+const TONE = (() => {
+  const t = new Float32Array(2048);
+  for (let n = 0; n < 2048; n++) {
+    const d = Math.min(1, FIT.gain * n / 2047) ** FIT.gamma, i = FIT.tone.findIndex(([x]) => d <= x);
+    const [a, ca] = FIT.tone[Math.max(0, i - 1)], [b, cb] = FIT.tone[Math.max(1, i)];
+    t[n] = ca + (cb - ca) * (d - a) / (b - a);
+  }
+  return t;
+})();
+// Print: a hex grid turned about the middle of the page. A dot's radius is half the spacing times the darkness there.
+function dotsOf(p, { f, cell, cols, rows }) {
+  const s = p.spacing, a = ANGLE * Math.PI / 180, ax = Math.cos(a) * s, ay = Math.sin(a) * s, bx = Math.cos(a + Math.PI / 3) * s, by = Math.sin(a + Math.PI / 3) * s;
+  const N = Math.ceil(Math.hypot(W, H) / s) + 2, xs = [], ys = [], rs = [];
+  for (let j = -N; j <= N; j++) for (let i = -N; i <= N; i++) {
+    const x = W / 2 + i * ax + j * bx, y = H / 2 + i * ay + j * by;
+    if (x < -s || x > W + s || y < -s || y > H + s) continue;
+    const fx = clamp(x / cell - 0.5, 0, cols - 1.001), fy = clamp(y / cell - 0.5, 0, rows - 1.001), x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0, o = y0 * cols + x0;
+    const v = f[o] * (1 - tx) * (1 - ty) + f[o + 1] * tx * (1 - ty) + f[o + cols] * (1 - tx) * ty + f[o + cols + 1] * tx * ty;
+    const d = TONE[Math.floor(clamp(v, 0, 1) * 2047)];
+    if (d <= 0.03) continue;
+    xs.push(x); ys.push(y); rs.push(0.5 * s * d);
+  }
+  return { xs, ys, rs };
+}
+function dotsFor(p, mem = {}) {
+  const key = keyOf(p);
+  if (mem.key !== key) { mem.dots = dotsOf(p, fieldOf(p, layersOf(p, mem))); mem.key = key; }
+  return mem.dots;
+}
+function paint(c, d, ox, oy, z, vw, vh) {
+  c.fillStyle = INK; c.beginPath();
+  for (let i = 0; i < d.xs.length; i++) {
+    const x = ox + d.xs[i] * z, y = oy + d.ys[i] * z, r = d.rs[i] * z;
+    if (x < -r || y < -r || x > vw + r || y > vh + r) continue;
+    c.moveTo(x + r, y); c.arc(x, y, r, 0, Math.PI * 2);
+  }
+  c.fill();
+}
+
+/* ---------- State ---------- */
+const FRESH = {
+  form: 'rings',
+  rings: { seed: SITE_NUMBER, place: 'top-right', dx: 0, dy: 0, count: 3, size: 142, twist: 165, fade: 60, gap: 100, rotate: 0 },
+  bands: { seed: 12, place: 'top', dx: 0, dy: 0, count: 1, size: 100, twist: 100, fade: 60, gap: 100, rotate: 0, dist: BAND_DIST },
+  dots: { spacing: 7, soft: 22 },
+};
+let S = JSON.parse(JSON.stringify(FRESH));
+const current = () => ({ form: S.form, ...S[S.form], ...S.dots });
+const nameOf = (p) => `${p.form === 'rings' ? 'Rings' : 'Bands'} No. ${p.seed}`;
+// Everything that makes a pattern, always in the same order: two patterns are the same if their keys are.
+const keyOf = (p) => JSON.stringify([p.form, p.seed, p.place, p.dx, p.dy, p.count, p.size, p.twist, p.fade, p.gap, p.rotate, p.dist, p.spacing, p.soft]);
+const number = (v, lo, hi, fallback) => (Number.isFinite(v) ? clamp(v, lo, hi) : fallback);
+// A stored pattern, checked before it is used. Patterns from before Gap and Rotate get the values that match how they were placed.
+function checked(p) {
+  const form = p && p.form === 'bands' ? 'bands' : 'rings', d = FRESH[form], rings = form === 'rings', place = Object.hasOwn(PLACES, p?.place) ? p.place : d.place, turn = rings ? 180 : 90;
+  return {
+    form, seed: Math.round(number(p?.seed, 1, 1e6, d.seed)), place,
+    dx: number(p?.dx, -W, W, 0), dy: number(p?.dy, -H, H, 0), count: Math.round(number(p?.count, 1, 4, d.count)),
+    size: number(p?.size, 40, 200, d.size), twist: number(p?.twist, 0, 200, d.twist), fade: number(p?.fade, 0, 100, d.fade),
+    gap: number(p?.gap, 0, 300, 100), rotate: number(p?.rotate, -turn, turn, rings ? 0 : PLACES[place].lean),
+    ...(rings ? {} : { dist: number(p?.dist, 0, 600, BAND_DIST) }),
+    spacing: number(p?.spacing, 4, 20, 7), soft: number(p?.soft, 0, 100, 22),
+  };
+}
+function adopt(p) {
+  const { form, spacing, soft, ...rest } = checked(p);
+  S.form = form; S[form] = rest; S.dots = { spacing, soft };
+}
+
+/* ---------- Canvas and camera: screen = cam + page * z ---------- */
+const cv = $('canvas'), ctx = cv.getContext('2d'), live = {};
+let vw = 0, vh = 0, dpr = 1, cam = { x: 0, y: 0, z: 1 }, base = 1, moved = false, dirty = true, stale = true, dots = null, T = {}, guides = false;
+function readTheme() {
+  const cs = getComputedStyle(document.documentElement), t = (n) => cs.getPropertyValue(n).trim();
+  T = { ground: t('--ground'), shadow: t('--sheet-shadow'), accent: t('--accent') };
+  dirty = true;
+}
+function resize() {
+  vw = cv.clientWidth; vh = cv.clientHeight; dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
+  if (!moved) fitView();
+  dirty = true;
+}
+// 100% is the page filling the space under the row of actions: beside the panel, or above it on a phone.
+function fitView() {
+  const wide = vw >= 720, box = $('panel').getBoundingClientRect(), row = $('top').getBoundingClientRect();
+  const left = wide ? box.right + 12 : 12, top = row.bottom + 12, w = vw - left - 12, h = (wide ? vh - 30 : box.top - 44) - top;
+  base = Math.max(0.05, Math.min(w / W, h / H));
+  cam = { z: base, x: wide ? left : (vw - W * base) / 2, y: top };
+  $('top').style.right = wide ? `${vw - left - W * base}px` : '';
+  dirty = true; zoomLabel();
+}
+const toPage = (sx, sy) => [(sx - cam.x) / cam.z, (sy - cam.y) / cam.z];
+function zoomAt(sx, sy, z) {
+  const [wx, wy] = toPage(sx, sy);
+  cam.z = clamp(z, base * 0.25, base * 8); cam.x = sx - wx * cam.z; cam.y = sy - wy * cam.z;
+  moved = true; dirty = true; zoomLabel();
+}
+function zoomLabel() { $('zoom-pct').textContent = Math.round((cam.z / base) * 100) + '%'; }
+function draw() {
+  const { x, y, z } = cam;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = T.ground; ctx.fillRect(0, 0, vw, vh);
+  ctx.save(); ctx.shadowColor = T.shadow; ctx.shadowBlur = 28; ctx.shadowOffsetY = 6;
+  ctx.fillStyle = PAPER; ctx.fillRect(x, y, W * z, H * z); ctx.restore();
+  ctx.save(); ctx.beginPath(); ctx.rect(x, y, W * z, H * z); ctx.clip();
+  paint(ctx, dots, x, y, z, vw, vh);
+  if (S.form === 'bands' && (guides || pinDrag)) drawAxes();
+  ctx.restore();
+  const [px, py] = pinScreen();
+  ctx.beginPath(); ctx.arc(px, py, 9, 0, Math.PI * 2);
+  ctx.fillStyle = T.accent; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+}
+// While placing bands: each band's axis, and the line from the pin to the first one.
+function drawAxes() {
+  const p = current(), { x, y, ax, ay, nx, ny, dist, k } = frameOf(p), at = (a, b) => [cam.x + a * cam.z, cam.y + b * cam.z];
+  ctx.strokeStyle = T.accent; ctx.lineWidth = 1.5;
+  offsetsOf(p).forEach((off, j) => {
+    const d = dist + off * k, fx = x + nx * d, fy = y + ny * d, long = W + H;
+    ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(...at(fx - ax * long, fy - ay * long)); ctx.lineTo(...at(fx + ax * long, fy + ay * long)); ctx.stroke();
+    ctx.setLineDash([]);
+    if (j === 0) { ctx.beginPath(); ctx.moveTo(...at(x, y)); ctx.lineTo(...at(fx, fy)); ctx.stroke(); }
+  });
+}
+function pinScreen() { const [x, y] = pinOf(current()); return [cam.x + x * cam.z, cam.y + y * cam.z]; }
+function frame() {
+  if (stale) { stale = false; dots = dotsFor(current(), live); dirty = true; }
+  if (dirty) { dirty = false; draw(); }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Undo: every change is a copy of the settings ---------- */
+const past = [], future = [];
+let shown = JSON.stringify(S);
+function commit() {
+  const now = JSON.stringify(S);
+  if (now === shown) return;
+  past.push(shown); if (past.length > 100) past.shift();
+  future.length = 0; shown = now;
+  stale = true; sync(); saveDraft();
+}
+function step(from, to) {
+  if (!from.length) return;
+  to.push(shown); shown = from.pop(); S = JSON.parse(shown);
+  stale = true; sync(); saveDraft();
+}
+$('undo').onclick = () => step(past, future);
+$('redo').onclick = () => step(future, past);
+
+/* ---------- Controls ---------- */
+const pressed = (sel, on) => document.querySelectorAll(sel).forEach((b) => b.setAttribute('aria-pressed', String(on(b))));
+const SLIDERS = ['rotate', 'dist', 'gap', 'size', 'twist', 'fade', 'spacing', 'soft'];
+const bagOf = (key) => (key in S.dots ? S.dots : S[S.form]);
+const readout = (el) => { el.nextElementSibling.textContent = el.id === 'rotate' ? `${el.value}°` : el.value; };
+function sync() {
+  const f = S[S.form], rings = S.form === 'rings', p = current(), turn = rings ? 180 : 90;
+  pressed('[data-form]', (b) => b.dataset.form === S.form);
+  pressed('[data-place]', (b) => b.dataset.place === f.place);
+  pressed('[data-count]', (b) => +b.dataset.count === f.count);
+  $('count-label').textContent = rings ? 'How many rings' : 'How many bands';
+  $('dist-row').hidden = rings;
+  $('dist').disabled = f.place === 'middle';
+  $('gap').disabled = f.count < 2;
+  $('rotate').min = -turn; $('rotate').max = turn;
+  for (const key of SLIDERS) { const el = $(key), bag = bagOf(key); if (key in bag) { el.value = bag[key]; readout(el); } }
+  $('caption').textContent = nameOf(p);
+  $('undo').disabled = !past.length; $('redo').disabled = !future.length;
+  syncSaved();
+}
+$('places').innerHTML = Object.entries(PLACES).map(([k, s]) => `<button type="button" data-place="${k}" aria-label="${s.label}" title="${s.label}"><i></i></button>`).join('');
+$('counts').innerHTML = [1, 2, 3, 4].map((n) => `<button type="button" data-count="${n}">${n}</button>`).join('');
+document.querySelectorAll('[data-form]').forEach((b) => b.addEventListener('click', () => { S.form = b.dataset.form; commit(); }));
+// A place puts the pin back on its spot and turns the pattern to suit it. Distance stays, so bands sit as far from a corner as from an edge.
+document.querySelectorAll('[data-place]').forEach((b) => b.addEventListener('click', () => {
+  const place = b.dataset.place;
+  Object.assign(S[S.form], { place, dx: 0, dy: 0, rotate: S.form === 'bands' ? PLACES[place].lean : 0 });
+  commit();
+}));
+document.querySelectorAll('[data-count]').forEach((b) => b.addEventListener('click', () => { S[S.form].count = +b.dataset.count; commit(); }));
+for (const key of SLIDERS) {
+  const el = $(key);
+  el.addEventListener('input', () => { bagOf(key)[key] = +el.value; readout(el); stale = true; syncSaved(); });
+  el.addEventListener('change', commit);
+}
+// The bands' axes show while the pointer is on the controls that place them.
+document.querySelectorAll('[data-guides]').forEach((el) => {
+  el.addEventListener('pointerenter', () => { guides = true; dirty = true; });
+  el.addEventListener('pointerleave', () => { guides = false; dirty = true; });
+});
+$('regenerate').onclick = () => {
+  const f = S[S.form];
+  let n = f.seed;
+  while (n === f.seed) n = 1 + Math.floor(Math.random() * 9999);
+  f.seed = n; commit();
+};
+document.querySelectorAll('[data-export]').forEach((b) => b.addEventListener('click', () => saveExport(b.dataset.export, current())));
+// Clicking a button doesn't keep focus on it; Tab focus works as usual.
+document.querySelectorAll('button').forEach((b) => b.addEventListener('mousedown', (e) => e.preventDefault()));
+
+const zoomBy = (k) => zoomAt(vw / 2, vh / 2, cam.z * k);
+$('zoom-in').onclick = () => zoomBy(1.25);
+$('zoom-out').onclick = () => zoomBy(0.8);
+$('zoom-pct').onclick = () => { moved = false; fitView(); };
+
+/* ---------- Moving the view and the pin ---------- */
+const touches = new Map();
+let pan = null, pinch = null, pinDrag = false;
+const nearPin = (x, y) => Math.hypot(x - pinScreen()[0], y - pinScreen()[1]) < 18;
+function cursor(x, y) { cv.style.cursor = pinDrag || pan ? 'grabbing' : x !== undefined && nearPin(x, y) ? 'move' : 'grab'; }
+function pinchState() { const [[ax, ay], [bx, by]] = [...touches.values()]; return { cx: (ax + bx) / 2, cy: (ay + by) / 2, d: Math.hypot(ax - bx, ay - by) || 1 }; }
+cv.addEventListener('pointerdown', (e) => {
+  try { cv.setPointerCapture(e.pointerId); } catch {}
+  if (e.pointerType === 'touch') {
+    touches.set(e.pointerId, [e.clientX, e.clientY]);
+    if (touches.size === 2) { pan = null; pinDrag = false; pinch = { ...pinchState(), z: cam.z }; return; }
+    if (touches.size > 2) return;
+  }
+  if (nearPin(e.clientX, e.clientY)) pinDrag = true;
+  else pan = { x: e.clientX, y: e.clientY };
+  cursor();
+});
+cv.addEventListener('pointermove', (e) => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pinch) {
+    if (touches.size < 2) return;
+    const p = pinchState();
+    zoomAt(pinch.cx, pinch.cy, pinch.z * (p.d / pinch.d));
+    cam.x += p.cx - pinch.cx; cam.y += p.cy - pinch.cy;
+    pinch = { ...pinch, cx: p.cx, cy: p.cy };
+    return;
+  }
+  if (pinDrag) {
+    const f = S[S.form], s = PLACES[f.place], [x, y] = toPage(e.clientX, e.clientY);
+    f.dx = Math.round(clamp(x, 0, W) - s.x * W); f.dy = Math.round(clamp(y, 0, H) - s.y * H);
+    stale = true; syncSaved();
+    return;
+  }
+  if (pan) { cam.x += e.clientX - pan.x; cam.y += e.clientY - pan.y; pan = { x: e.clientX, y: e.clientY }; moved = true; dirty = true; return; }
+  cursor(e.clientX, e.clientY);
+});
+function endPointer(e) {
+  touches.delete(e.pointerId);
+  if (pinch) { if (!touches.size) pinch = null; return; }
+  if (pinDrag) { pinDrag = false; dirty = true; commit(); }
+  pan = null; cursor();
+}
+cv.addEventListener('pointerup', endPointer);
+cv.addEventListener('pointercancel', endPointer);
+cv.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const k = e.deltaMode === 1 ? 16 : 1;
+  // A mouse wheel notch zooms by about a quarter; a trackpad pinch sends many small steps.
+  if (e.ctrlKey || e.metaKey) zoomAt(e.clientX, e.clientY, cam.z * Math.exp(-clamp(e.deltaY * k, -40, 40) * 0.006));
+  else {
+    const [dx, dy] = e.shiftKey && !e.deltaX ? [e.deltaY, 0] : [e.deltaX, e.deltaY];
+    cam.x -= dx * k; cam.y -= dy * k; moved = true; dirty = true;
+  }
+}, { passive: false });
+// Safari's trackpad pinch.
+let gestureZ = 0;
+cv.addEventListener('gesturestart', (e) => { e.preventDefault(); gestureZ = cam.z; });
+cv.addEventListener('gesturechange', (e) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, gestureZ * e.scale); });
+addEventListener('keydown', (e) => {
+  const mod = e.metaKey || e.ctrlKey, key = e.key.toLowerCase();
+  if (e.key === 'Escape' && !$('saved').hidden) { showSaved(false, true); return; }
+  if (!$('saved').hidden) return;
+  if (mod && key === 'z') { e.preventDefault(); step(e.shiftKey ? future : past, e.shiftKey ? past : future); return; }
+  if (mod && key === 'y') { e.preventDefault(); step(future, past); return; }
+  if (mod && (key === '=' || key === '+')) { e.preventDefault(); zoomBy(1.25); return; }
+  if (mod && key === '-') { e.preventDefault(); zoomBy(0.8); return; }
+  if (mod && key === '0') { e.preventDefault(); moved = false; fitView(); }
+});
+
+/* ---------- Export ---------- */
+const EXPORTS = {
+  png: { ext: 'png', make(p) {
+    const c = document.createElement('canvas'), z = PNG_SCALE;
+    c.width = W * z; c.height = H * z;
+    paint(c.getContext('2d'), dotsFor(p), 0, 0, z, c.width, c.height);
+    return new Promise((done) => c.toBlob(done, 'image/png'));
+  } },
+  svg: { ext: 'svg', make(p) {
+    const d = dotsFor(p), body = d.xs.map((x, i) => `<circle cx="${x.toFixed(1)}" cy="${d.ys[i].toFixed(1)}" r="${d.rs[i].toFixed(2)}"/>`);
+    return new Blob([`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" fill="${INK}">\n${body.join('\n')}\n</svg>\n`], { type: 'image/svg+xml' });
+  } },
+  // Every setting, plus the curves themselves, so code can rebuild the pattern without this page.
+  json: { ext: 'json', make(p) {
+    const lines = bundles(p).map(({ curves, ink, off }) => ({ ink: +ink.toFixed(3), offset: +off.toFixed(3), curves: curves.map((c) => c.map((v) => +v.toFixed(3))) }));
+    const all = { format: 'halftone-field/2', page: [W, H], name: nameOf(p), settings: p, ink: INK, print: { ...FIT, angle: ANGLE }, lines };
+    return new Blob([JSON.stringify(all, null, 2) + '\n'], { type: 'application/json' });
+  } },
+};
+async function saveExport(kind, p) {
+  const { ext, make } = EXPORTS[kind];
+  saveFile(`halftone-${p.form}-${p.seed}.${ext}`, await make(p));
+}
+function saveFile(name, blob) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+
+/* ---------- Saved patterns: kept in this browser ---------- */
+const LOCAL = 'field-saved-1';
+// What a first visit finds on the Saved screen. They're ordinary saved patterns: the heart removes them.
+const STARTERS = [
+  { form: 'rings', seed: SITE_NUMBER, place: 'top-right', count: 3, size: 142, twist: 165, fade: 60 },
+  { form: 'bands', seed: 12, place: 'top-left', count: 3, size: 100, twist: 100, fade: 60 },
+  { form: 'rings', seed: 8, place: 'left', count: 3, size: 120, twist: 100, fade: 60, rotate: 50 },
+  { form: 'bands', seed: 12, place: 'middle', count: 3, size: 70, twist: 100, fade: 60, gap: 200, rotate: 45 },
+].map((pattern, n) => ({ id: `starter-${n}`, at: 4 - n, pattern }));
+let saved = [], opened = null;
+const thumbs = new Map();
+function readLocal() {
+  try {
+    const kept = localStorage.getItem(LOCAL);
+    if (kept === null) return STARTERS;
+    const list = JSON.parse(kept);
+    return Array.isArray(list) ? list : [];
+  } catch { return STARTERS; }
+}
+const stored = (id, data) => ({ id: String(id), at: Number(data?.at) || 0, pattern: checked(data?.pattern) });
+const writeLocal = () => { try { localStorage.setItem(LOCAL, JSON.stringify(saved)); } catch {} };
+const newest = () => saved.sort((a, b) => b.at - a.at);
+function toggleSaved() {
+  const p = current(), key = keyOf(p), hit = saved.find((s) => keyOf(s.pattern) === key);
+  if (hit) {
+    saved = saved.filter((s) => s !== hit);
+  } else {
+    saved.unshift({ id: `p${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`, at: Date.now(), pattern: p });
+  }
+  writeLocal(); syncSaved();
+}
+$('like').onclick = toggleSaved;
+function syncSaved() {
+  const on = saved.some((s) => keyOf(s.pattern) === keyOf(current()));
+  $('like').setAttribute('aria-pressed', String(on));
+  $('like').setAttribute('aria-label', on ? 'Remove from saved' : 'Save');
+  $('like').title = on ? 'Remove from saved' : 'Save';
+  $('saved-count').textContent = saved.length;
+}
+function renderSaved() {
+  $('saved-total').textContent = saved.length;
+  $('empty').hidden = saved.length > 0;
+  $('grid').replaceChildren(...saved.map((s) => {
+    const card = document.createElement('figure'), sheet = document.createElement('div'), pick = document.createElement('button');
+    card.className = 'card'; sheet.className = 'sheet'; pick.className = 'pick'; pick.type = 'button';
+    pick.setAttribute('aria-label', nameOf(s.pattern));
+    pick.setAttribute('aria-expanded', String(opened === s.id));
+    pick.append(thumb(s));
+    pick.onclick = () => { opened = opened === s.id ? null : s.id; renderSaved(); };
+    sheet.append(pick);
+    if (opened === s.id) {
+      const box = document.createElement('div'), load = document.createElement('button'), formats = document.createElement('div');
+      box.className = 'options island'; load.className = 'load'; load.type = 'button'; load.textContent = 'Load in editor';
+      load.onclick = (e) => { adopt(s.pattern); commit(); showSaved(false, !e.detail); };
+      formats.className = 'formats'; formats.setAttribute('role', 'group'); formats.setAttribute('aria-label', 'Export');
+      formats.append('Export');
+      for (const [kind, name] of [['png', 'PNG'], ['svg', 'SVG'], ['json', 'JSON']]) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = name; b.onclick = () => saveExport(kind, s.pattern);
+        formats.append(b);
+      }
+      box.append(load, formats); sheet.append(box);
+    }
+    const name = document.createElement('figcaption');
+    name.textContent = nameOf(s.pattern);
+    card.append(sheet, name);
+    return card;
+  }));
+  paintThumbs();
+}
+function thumb(s) {
+  if (!thumbs.has(s.id)) {
+    const c = document.createElement('canvas');
+    c.width = 680; c.height = 425;
+    const g = c.getContext('2d'); g.fillStyle = PAPER; g.fillRect(0, 0, c.width, c.height);
+    thumbs.set(s.id, { c, drawn: false, pattern: s.pattern });
+  }
+  return thumbs.get(s.id).c;
+}
+// One at a time, so the screen answers while they draw.
+function paintThumbs() {
+  const next = [...thumbs.values()].find((t) => !t.drawn);
+  if (!next) return;
+  next.drawn = true;
+  setTimeout(() => {
+    const z = next.c.width / W;
+    paint(next.c.getContext('2d'), dotsFor(next.pattern), 0, 0, z, next.c.width, next.c.height);
+    paintThumbs();
+  }, 0);
+}
+// Focus moves with the screen only for the keyboard: after a click it would just put a ring on a button.
+function showSaved(on, keys) {
+  $('saved').hidden = !on;
+  if (on) { opened = null; renderSaved(); $('saved').scrollTop = 0; }
+  if (keys) $(on ? 'back' : 'to-saved').focus({ preventScroll: true });
+}
+$('to-saved').onclick = (e) => showSaved(true, !e.detail);
+$('back').onclick = (e) => showSaved(false, !e.detail);
+
+/* ---------- This browser's draft ---------- */
+let draftTimer = 0;
+function saveDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => { try { localStorage.setItem('field-draft-1', shown); } catch {} }, 400);
+}
+function loadDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem('field-draft-1') || 'null');
+    if (!d) return;
+    const rings = checked({ form: 'rings', ...d.rings, ...d.dots }), bands = checked({ form: 'bands', ...d.bands, ...d.dots });
+    const { spacing, soft } = rings;
+    S = { form: d.form === 'bands' ? 'bands' : 'rings', rings: { ...rings }, bands: { ...bands }, dots: { spacing, soft } };
+    for (const f of [S.rings, S.bands]) for (const k of ['form', 'spacing', 'soft']) delete f[k];
+    shown = JSON.stringify(S);
+  } catch {}
+}
+
+/* ---------- Start ---------- */
+loadDraft();
+saved = readLocal().map((s) => stored(s?.id, s));
+newest();
+readTheme(); sync(); resize(); cursor();
+new ResizeObserver(resize).observe(cv);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+requestAnimationFrame(frame);
+</script>

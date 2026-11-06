@@ -1,0 +1,155 @@
+---
+// The apps, each with its own full-screen page. The navigation doesn't link here yet: the way in is the address, and
+// each app's title links back here.
+import { Image } from 'astro:assets';
+import Layout from '../../layouts/Layout.astro';
+import halftonePainter from '../../assets/apps/halftone-painter.jpg';
+import halftonePatternStudio from '../../assets/apps/halftone-pattern-studio.jpg';
+
+const title = 'Apps | meaningfool';
+const description = 'Small tools by Josselin Perrus that run in your browser: a painter and a pattern studio for halftone dots.';
+
+const apps = [
+	{
+		href: '/apps/halftone-painter/',
+		name: 'Halftone Painter',
+		line: 'Sculpt a map made of dots: raise and lower the land, then export it.',
+		screenshot: halftonePainter,
+	},
+	{
+		href: '/apps/halftone-pattern-studio/',
+		name: 'Halftone Pattern Studio',
+		line: 'Generate halftone rings and bands, place them on a page and export them.',
+		screenshot: halftonePatternStudio,
+	},
+];
+---
+
+<Layout title={title} description={description}>
+	<main id="main" class="apps">
+		<div class="head">
+			<h1>Apps</h1>
+			<p class="label">Small tools that run in your browser</p>
+		</div>
+		<ul class="tiles" role="list">
+			{apps.map((app) => (
+				<li class="tile">
+					<div class="shot">
+						<Image
+							src={app.screenshot}
+							alt=""
+							widths={[362, 720]}
+							sizes="(max-width: 900px) calc(100vw - 68px), min(362px, calc((100vw - 96px) / 3 - 20px))"
+						/>
+					</div>
+					<h2>
+						<a href={app.href}><span class="name">{app.name}</span> <span class="arrow" aria-hidden="true">→</span></a>
+					</h2>
+					<p class="line">{app.line}</p>
+				</li>
+			))}
+		</ul>
+	</main>
+</Layout>
+
+<style>
+	.apps {
+		display: grid;
+		gap: 24px;
+		padding-block: 72px 88px;
+	}
+
+	.head {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 16px;
+		padding-bottom: 14px;
+		border-bottom: 1px solid var(--line);
+	}
+
+	h1 {
+		margin: 0;
+		font-weight: 400;
+		font-size: 22px;
+		letter-spacing: -0.04em;
+	}
+
+	.label {
+		font-size: 12px;
+		letter-spacing: 0.04em;
+		color: var(--muted);
+	}
+
+	/* A tile each, as the home's Projects: its whole area a link to the app */
+	.tiles {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 24px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.tile {
+		position: relative;
+		display: grid;
+		gap: 6px;
+		align-content: start;
+		min-width: 0;
+	}
+
+	.shot {
+		padding: 10px;
+		background: var(--panel);
+	}
+
+	.shot img {
+		display: block;
+		width: 100%;
+		height: auto;
+		aspect-ratio: 16 / 10;
+		object-fit: cover;
+		border: 1px solid var(--line);
+	}
+
+	h2 {
+		margin: 0;
+		padding-top: 10px;
+		font-weight: 400;
+		font-size: 16px;
+		letter-spacing: -0.03em;
+	}
+
+	h2 a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	h2 a::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+
+	/* On hover the name is underlined, not the space and the arrow after it. */
+	h2 a:hover .name {
+		text-decoration: underline;
+		text-underline-offset: 4px;
+	}
+
+	h2 .arrow {
+		color: var(--accent);
+	}
+
+	.line {
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	@media (max-width: 900px) {
+		.tiles {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
