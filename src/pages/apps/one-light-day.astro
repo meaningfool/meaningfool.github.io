@@ -1,0 +1,1057 @@
+---
+// One light-day: an interactive map from the Moon to Betelgeuse, stepped through frame by frame with Previous and Next.
+// Voyager 1 crossed one light-day from Earth on 18 November 2026; each frame puts one place in that scale, real facts
+// kept apart from what stories put there. Everything is drawn on a canvas from orbital elements and star positions
+// in the script below; there is nothing to save, so it keeps no data. Each frame has its own #address.
+import App from '../../layouts/App.astro';
+---
+
+<App title="One Light-Day | meaningfool" description="An interactive map from the Moon to Betelgeuse: where Voyager 1, one light-day from Earth, sits among the planets, the nearest stars and places that stories made famous. It runs in your browser.">
+<div class="app">
+  <aside class="panel" id="panel" data-kind="real" aria-label="Tour">
+    <div class="p-top"><h1 class="p-app"><a href="/apps/" title="All apps">One light-day<span>.</span></a></h1><span class="p-where"><span id="pGroup">Today</span> · <span id="pCount">1 / 29</span></span></div>
+    <div class="p-prog" aria-hidden="true"><i id="pBar"></i></div>
+    <article class="card" id="card" aria-live="polite">
+      <p class="c-k" id="cK">18 November 2026</p>
+      <h2 class="c-h" id="cH">One light-day</h2>
+      <p class="c-f" id="cF"></p>
+      <div id="cBody"></div>
+    </article>
+    <nav class="p-nav" aria-label="Frames">
+      <button id="prev" type="button">← Previous</button>
+      <button id="next" type="button">Next →</button>
+    </nav>
+  </aside>
+  <div class="stage">
+    <canvas id="stars" aria-hidden="true"></canvas>
+    <canvas id="sky" role="img" aria-label="Map of the Sun, planets, Voyager 1 and nearby stars, drawn to scale for the current frame"></canvas>
+  </div>
+</div>
+</App>
+
+<style is:global>
+/* The site's fonts, as src/styles/tokens.css declares them. They are declared here rather than by importing tokens.css,
+   because sharing that file with this page would change how /documents/ bundles its styles. */
+@font-face {
+	font-family: 'DejaVu Sans Mono';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../../fonts/dejavu-sans-mono.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+2190-21FF, U+2500-257F;
+}
+@font-face {
+	font-family: 'Newsreader';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../../fonts/newsreader.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: 'Newsreader';
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../../fonts/newsreader-italic.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root{
+  /* A deep-space window with one caption card beside it (below it on narrow screens). One dark look by design.
+     The site's fonts: Newsreader for names and text, DejaVu Sans Mono for figures and controls. */
+  --space:#05070B; --panel:#0A0E14; --raise:#121823; --ink:#E8EDF4; --ink-2:#C5CEDB; --muted:#8E9AAD; --line:rgba(150,172,200,.18);
+  --gold:#F2B544; --teal:#4FD1C5; --violet:#B79CFF; --pink:#FF8FB1; --on-kc:#0B0F16; --focus:#8FB6FF; --site-accent:#e8894a;
+  --f-serif:Newsreader, Georgia, serif; --f-mono:"DejaVu Sans Mono", Menlo, ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+:root:root{color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%; margin:0; overflow:hidden; background:var(--space); color:var(--ink)}
+body{font:400 15.5px/1.5 var(--f-serif); -webkit-font-smoothing:antialiased}
+p,h1,h2,ul{margin:0}
+button{font:inherit}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+
+.app{height:100%; display:grid; grid-template-columns:minmax(300px,390px) minmax(0,1fr); grid-template-areas:"panel stage"}
+.stage{grid-area:stage; position:relative; min-width:0; min-height:0; overflow:hidden; background:var(--space)}
+.stage canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+#sky{touch-action:pan-y; user-select:none; -webkit-user-select:none}
+
+.panel{--kc:var(--gold); grid-area:panel; min-width:0; min-height:0; display:flex; flex-direction:column; gap:14px;
+  background:var(--panel); border-right:1px solid var(--line); padding:18px 22px 18px}
+.panel[data-kind="exp"]{--kc:var(--teal)}
+.panel[data-kind="tb"]{--kc:var(--violet)}
+.panel[data-kind="pop"]{--kc:var(--pink)}
+.p-top{display:flex; justify-content:space-between; align-items:baseline; gap:12px; font:400 11px/1.3 var(--f-mono); color:var(--muted)}
+.p-app{font:400 13px/1.3 var(--f-mono); color:var(--ink); white-space:nowrap}
+.p-app a{color:inherit; text-decoration:none}
+.p-app a:hover{text-decoration:underline; text-underline-offset:3px}
+.p-app span{color:var(--site-accent)}
+.p-where{text-align:right; letter-spacing:.04em; text-transform:uppercase; font-variant-numeric:tabular-nums}
+.p-prog{height:2px; background:var(--line); border-radius:2px; overflow:hidden; margin-top:-6px}
+.p-prog i{display:block; height:100%; width:0; background:var(--kc); transition:width .5s ease, background-color .3s}
+
+.card{flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--line) transparent; padding-right:4px}
+.card.fade{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 30px),transparent); mask-image:linear-gradient(to bottom,#000 calc(100% - 30px),transparent)}
+.card.in{animation:cardIn .45s ease both}
+@keyframes cardIn{from{opacity:.15}to{opacity:1}}
+.c-k{font:400 10.5px/1.4 var(--f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--kc)}
+.c-h{font:400 clamp(27px,2.5vw,33px)/1.08 var(--f-serif); letter-spacing:-.01em; margin-top:6px; text-wrap:balance}
+.panel[data-fict="1"] .c-h{font-style:italic}
+.c-f{margin-top:8px; font:400 12px/1.5 var(--f-mono); color:var(--ink-2); font-variant-numeric:tabular-nums}
+#cBody{display:grid; gap:14px; margin-top:16px}
+.c-sec{display:grid; gap:5px; padding-top:12px; border-top:1px solid var(--line)}
+.c-lab{display:flex; align-items:center; gap:7px; font:400 10px/1.3 var(--f-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.c-lab::before{content:""; width:8px; height:8px; border-radius:50%; background:var(--ink-2)}
+.c-lab.fic::before{background:transparent; border:1.5px solid var(--pink)}
+.c-b{color:var(--ink-2); max-width:60ch}
+.c-fic{list-style:none; padding:0; display:grid; gap:7px}
+.c-fic li{--lc:var(--pink); position:relative; padding-left:15px; color:var(--ink-2)}
+.c-fic li::before{content:""; position:absolute; left:0; top:.6em; width:7px; height:7px; border-radius:50%; border:1.5px solid var(--lc)}
+.c-fic li.f-exp{--lc:var(--teal)}
+.c-fic li.f-tb{--lc:var(--violet)}
+.c-fic b{font-weight:400; font-style:italic; color:var(--ink)}
+.c-b a,.c-fic a{color:var(--ink); text-decoration:underline; text-decoration-color:var(--muted); text-underline-offset:3px}
+.c-b a:hover,.c-fic a:hover{text-decoration-color:var(--ink)}
+.c-hint{margin-top:2px; font:400 11.5px/1.5 var(--f-mono); color:var(--muted)}
+
+.p-nav{display:grid; grid-template-columns:1fr 1.4fr; gap:10px}
+.p-nav button{height:44px; border-radius:10px; border:1px solid var(--line); background:var(--raise); color:var(--ink); font:400 13.5px var(--f-mono); cursor:pointer;
+  transition:background-color .2s, border-color .2s, opacity .2s}
+.p-nav button:hover:not(:disabled){border-color:rgba(200,215,235,.4)}
+.p-nav #next{background:var(--kc); border-color:var(--kc); color:var(--on-kc)}
+.p-nav #next:hover:not(:disabled){filter:brightness(1.08)}
+.p-nav button:disabled{opacity:.35; cursor:default}
+
+@media (max-width:760px), (orientation:portrait) and (max-width:1100px){
+  .app{grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) clamp(256px,46%,430px); grid-template-areas:"stage" "panel"}
+  .panel{border-right:0; border-top:1px solid var(--line); gap:10px; padding:11px 16px 12px}
+  .p-prog{margin-top:-4px}
+  .c-h{font-size:24px; margin-top:4px}
+  .c-f{margin-top:5px; font-size:11.5px}
+  #cBody{gap:10px; margin-top:10px}
+  .c-sec{padding-top:9px; gap:3px}
+  body{font-size:15px; line-height:1.45}
+  .p-nav button{height:42px}
+}
+@media (prefers-reduced-motion: reduce){ .card.in{animation:none} .p-prog i{transition:none} }
+</style>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- constants ---------- */
+const AU_KM = 149597870.7, C_KMS = 299792.458;
+const LT = AU_KM / C_KMS;            // light-seconds per AU (~499)
+const LD = 86400 / LT;               // AU in one light-day (~173.14)
+const LYR = 31557600 / LT;           // AU in one light-year (~63,241)
+const MOON_AU = 384400 / AU_KM;
+const DEG = Math.PI / 180, TAU = Math.PI * 2;
+const J2000 = 2451545.0;
+const jdOf = ms => ms / 86400000 + 2440587.5;
+const CROSS_MS = Date.UTC(2026, 10, 18, 10, 16, 7);
+const RADIO_MS = Date.UTC(1920, 10, 2);           // first commercial radio broadcast (KDKA, Pittsburgh)
+const radioLY = () => (Date.now() - RADIO_MS)/31557600000;
+const ALPHACEN_LY = 4.365;
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- orbital mechanics ---------- */
+// JPL approximate Keplerian elements (J2000, valid 1800-2050)
+const PLANETS = [
+  {id:'mercury', name:'Mercury', a:0.38709927, e:0.20563593, I:7.00497902, L0:252.25032350, lp:77.45779628, node:48.33076593, Ld:149472.67411175, rad:2439.7, base:2.2, col:'#B9B2A8', band:[0.25, 3]},
+  {id:'venus',   name:'Venus',   a:0.72333566, e:0.00677672, I:3.39467605, L0:181.97909950, lp:131.60246718, node:76.67984255, Ld:58517.81538729, rad:6051.8, base:2.8, col:'#E8D3A6', band:[0.25, 3.5]},
+  {id:'earth',   name:'Earth',   a:1.00000261, e:0.01671123, I:-0.00001531, L0:100.46457166, lp:102.93768193, node:0, Ld:35999.37244981, rad:6371, base:3.4, col:'#6FB3FF', band:[0, 6]},
+  {id:'mars',    name:'Mars',    a:1.52371034, e:0.09339410, I:1.84969142, L0:-4.55343205, lp:-23.94362959, node:49.55953891, Ld:19140.30268499, rad:3389.5, base:2.7, col:'#E07A52', band:[0.4, 7]},
+  {id:'jupiter', name:'Jupiter', a:5.20288700, e:0.04838624, I:1.30439695, L0:34.39644051, lp:14.72847983, node:100.47390909, Ld:3034.74612775, rad:69911, base:3.9, col:'#E3C49A', band:[2.5, 45]},
+  {id:'saturn',  name:'Saturn',  a:9.53667594, e:0.05386179, I:2.48599187, L0:49.95424423, lp:92.59887831, node:113.66242448, Ld:1222.49362201, rad:58232, base:3.5, col:'#E8D08C', band:[5, 60]},
+  {id:'uranus',  name:'Uranus',  a:19.18916464, e:0.04725744, I:0.77263783, L0:313.23810451, lp:170.95427630, node:74.01692503, Ld:428.48202785, rad:25362, base:3.1, col:'#9FE3E8', band:[10, 90]},
+  {id:'neptune', name:'Neptune', a:30.06992276, e:0.00859048, I:1.77004347, L0:-55.12002969, lp:44.96476227, node:131.78422574, Ld:218.45945325, rad:24622, base:3.1, col:'#7C95FF', band:[16, 320]},
+  {id:'pluto',   name:'Pluto',   a:39.48211675, e:0.24882730, I:17.14001206, L0:238.92903833, lp:224.06891629, node:110.30393684, Ld:145.20780515, rad:1188, base:2.4, col:'#CDB9A5', band:[25, 130]},
+];
+const CERES = {id:'ceres', a:2.7675, e:0.0785, I:10.59, lp:153.9, node:80.3, M0:220.6, ep:2460950.5, n:0.21408};
+const EARTH_EL = PLANETS[2];
+
+function meanAnomDeg(el, jd){ return el.Ld != null ? el.L0 + el.Ld*(jd - J2000)/36525 - el.lp : el.M0 + el.n*(jd - el.ep); }
+function kepler(Mdeg, e){
+  let M = (Mdeg*DEG) % TAU; if (M > Math.PI) M -= TAU; else if (M < -Math.PI) M += TAU;
+  let E = e < 0.8 ? M + e*Math.sin(M) : (M < 0 ? -Math.PI : Math.PI);
+  for (let i = 0; i < 60; i++){ const d = (E - e*Math.sin(E) - M)/(1 - e*Math.cos(E)); E -= d; if (Math.abs(d) < 1e-12) break; }
+  return E;
+}
+function orient(el, xp, yp){
+  const w = (el.lp - el.node)*DEG, O = el.node*DEG, I = el.I*DEG;
+  const cw = Math.cos(w), sw = Math.sin(w), cO = Math.cos(O), sO = Math.sin(O), cI = Math.cos(I), sI = Math.sin(I);
+  return {x:(cw*cO - sw*sO*cI)*xp + (-sw*cO - cw*sO*cI)*yp, y:(cw*sO + sw*cO*cI)*xp + (-sw*sO + cw*cO*cI)*yp, z:(sw*sI)*xp + (cw*sI)*yp};
+}
+function helio(el, jd){ const E = kepler(meanAnomDeg(el, jd), el.e); return orient(el, el.a*(Math.cos(E) - el.e), el.a*Math.sqrt(1 - el.e*el.e)*Math.sin(E)); }
+function orbitPath(el, n){
+  const pts = new Float64Array(2*(n + 1)), b = el.a*Math.sqrt(1 - el.e*el.e);
+  for (let i = 0; i <= n; i++){ const E = i/n*TAU; const p = orient(el, el.a*(Math.cos(E) - el.e), b*Math.sin(E)); pts[2*i] = p.x; pts[2*i + 1] = p.y; }
+  return pts;
+}
+const dirVec = (lon, lat) => ({x:Math.cos(lat*DEG)*Math.cos(lon*DEG), y:Math.cos(lat*DEG)*Math.sin(lon*DEG), z:Math.sin(lat*DEG)});
+const dist3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+const norm3 = a => Math.hypot(a.x, a.y, a.z);
+
+const PROBES = [
+  {id:'voyager1', lon:255.9, lat:34.9, kms:16.95, jd0:jdOf(CROSS_MS), dEarth:LD},
+  {id:'voyager2', lon:289.0, lat:-36.0, kms:15.3, jd0:jdOf(Date.UTC(2026, 7, 24)), dEarth:143.1609},
+];
+for (const p of PROBES){
+  p.u = dirVec(p.lon, p.lat); p.v = p.kms*86400/AU_KM;
+  const E = helio(EARTH_EL, p.jd0), b = p.u.x*E.x + p.u.y*E.y + p.u.z*E.z, c = E.x*E.x + E.y*E.y + E.z*E.z - p.dEarth*p.dEarth;
+  p.r0 = b + Math.sqrt(b*b - c);
+}
+// Fixed points: real stars and fictional places (lon/lat ecliptic degrees, r in AU)
+const FIXED = [
+  {id:'tauceti', lon:17.8, lat:-24.8, r:11.91*LYR},
+  {id:'wolf359', lon:162.7, lat:0.2, r:7.86*LYR},
+  {id:'epseri', lon:48.2, lat:-27.7, r:10.47*LYR},
+  {id:'eri40', lon:60.2, lat:-28.4, r:16.26*LYR},
+  {id:'zetaret', lon:354.2, lat:-72.5, r:39.3*LYR},
+  {id:'canopus', lon:105.0, lat:-75.8, r:310*LYR},
+  {id:'betelgeuse', lon:88.8, lat:-16.0, r:548*LYR},
+  {id:'alphacen', lon:239.5, lat:-42.6, r:ALPHACEN_LY*LYR},
+  {id:'ring', lon:205, lat:0, r:21.0},                     // The Expanse: placement illustrative
+  {id:'tbfleet', lon:239.5, lat:-42.6, r:2.10*LYR},        // Trisolaran fleet in Crisis Year 205
+  {id:'doomsday', lon:128, lat:0, r:6.4},                // Doomsday Battle, out near Jupiter (place approximate)
+  {id:'battle1', lon:335, lat:0, r:1000},                 // Dark Battle 1 (place approximate)
+  {id:'battle2', lon:70, lat:-5, r:1000},                 // Dark Battle 2 (place approximate)
+  {id:'bronzetarget', lon:70, lat:-5, r:26*LYR},           // Bronze Age's unnamed target star
+  {id:'nh558j2', lon:335, lat:0, r:18*LYR},                // Natural Selection group's goal (direction illustrative)
+];
+for (const f of FIXED) f.u = dirVec(f.lon, f.lat);
+
+function computeWorld(ms){
+  const jd = jdOf(ms), w = {jd, ms};
+  for (const el of PLANETS.concat([CERES])){ const p = helio(el, jd); p.dx = p.x; p.dy = p.y; w[el.id] = p; }
+  const E = w.earth, lm = (218.316 + 13.176396*(jd - J2000))*DEG;
+  w.moon = {x:E.x + MOON_AU*Math.cos(lm), y:E.y + MOON_AU*Math.sin(lm), z:E.z}; w.moon.dx = w.moon.x; w.moon.dy = w.moon.y;
+  w.sun = {x:0, y:0, z:0, dx:0, dy:0};
+  const moonAt = (pid, dist, days, ph, retro) => { const p = w[pid], a = (retro ? -1 : 1)*TAU*((jd - J2000)/days) + ph, ox = dist*Math.cos(a), oy = dist*Math.sin(a); return {x:p.x + ox, y:p.y + oy, z:p.z, dx:p.dx + ox, dy:p.dy + oy}; };
+  w.ganymede = moonAt('jupiter', 0.007155, 7.1546, 1.0, false);
+  w.phoebe = moonAt('saturn', 0.08657, 550.3, 2.0, true);
+  for (const p of PROBES){ const r = p.r0 + p.v*(jd - p.jd0); w[p.id] = {x:r*p.u.x, y:r*p.u.y, z:r*p.u.z, r, dx:r*Math.cos(p.lon*DEG), dy:r*Math.sin(p.lon*DEG)}; }
+  for (const f of FIXED){ const r = f.r; w[f.id] = {x:r*f.u.x, y:r*f.u.y, z:r*f.u.z, r, dx:r*Math.cos(f.lon*DEG), dy:r*Math.sin(f.lon*DEG)}; }
+  { const sat = w.saturn, a = -0.6, d = 0.03; w.wormhole = {x:sat.x + d*Math.cos(a), y:sat.y + d*Math.sin(a), z:sat.z, dx:sat.dx + d*Math.cos(a), dy:sat.dy + d*Math.sin(a)}; }
+  return w;
+}
+function v1EarthAU(ms){
+  const jd = jdOf(ms), E = helio(EARTH_EL, jd), p = PROBES[0], r = p.r0 + p.v*(jd - p.jd0);
+  return dist3({x:r*p.u.x, y:r*p.u.y, z:r*p.u.z}, E);
+}
+let world = computeWorld(Date.now());
+
+// Alpha Centauri A and B: real orbit (a 23.3 AU, e 0.52, 79.9 yr, periastron 2035.6); orientation on the map is illustrative
+const AB = {a:23.3, e:0.5208, P:79.91, Tp:2035.6, rot:35*DEG, fA:0.91/1.99, fB:1.08/1.99};
+function abRel(year){
+  const E = kepler(360*(year - AB.Tp)/AB.P, AB.e), x = AB.a*(Math.cos(E) - AB.e), y = AB.a*Math.sqrt(1 - AB.e*AB.e)*Math.sin(E);
+  return [x*Math.cos(AB.rot) - y*Math.sin(AB.rot), x*Math.sin(AB.rot) + y*Math.cos(AB.rot)];
+}
+const AB_PATH = (() => { const out = []; for (let i = 0; i <= 240; i++) out.push(abRel(AB.Tp + AB.P*i/240)); return out; })();
+const yearNow = () => 1970 + Date.now()/31557600000;
+// Trisolaris: fictional chaotic orbit, drawn as an irregular illustrative path (AU from the A–B barycenter)
+const triPos = t => [6.2*Math.cos(0.91*t) + 3.1*Math.cos(2.37*t + 1) + 1.5*Math.cos(5.3*t + 2), 5.6*Math.sin(1.13*t) + 2.8*Math.sin(2.71*t + 0.5) + 1.3*Math.sin(4.7*t + 1.3)];
+
+/* ---------- formatting ---------- */
+const nf = new Intl.NumberFormat('en-US', {maximumFractionDigits:0});
+const fmtInt = x => nf.format(Math.round(x));
+const p2 = n => String(n).padStart(2, '0');
+const yrTxt = s => `${(s/31557600).toFixed(s < 31557600*10 ? 2 : 1)}`;
+function fmtDurCompact(s){
+  if (s < 60) return `${s < 10 ? s.toFixed(1) : Math.round(s)} s`;
+  if (s < 3600){ const t = Math.round(s), m = Math.floor(t/60); return `${m} min ${p2(t % 60)} s`; }
+  if (s < 172800){ const t = Math.round(s/60), h = Math.floor(t/60); return `${h} h ${p2(t % 60)} min`; }
+  if (s < 86400*90) return `${(s/86400).toFixed(1)} days`;
+  return `${yrTxt(s)} years`;
+}
+function fmtHMS(s){ const t = Math.round(s), h = Math.floor(t/3600), m = Math.floor((t % 3600)/60); return `${h} h ${p2(m)} min ${p2(t % 60)} s`; }
+function fmtLTshort(s){
+  if (s < 60) return `${s.toFixed(1)} light-sec`;
+  if (s < 3600) return `${(s/60).toFixed(s < 600 ? 1 : 0)} light-min`;
+  if (s < 172800) return `${(s/3600).toFixed(1)} light-hours`;
+  if (s < 86400*60) return `${(s/86400).toFixed(1)} light-days`;
+  return `${yrTxt(s)} light-years`;
+}
+
+/* ---------- particles ---------- */
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0)/4294967296; }; }
+function makeBelt(){
+  const R = rng(7), out = [];
+  while (out.length < 2000){
+    const a = 2.1 + R()*1.2; if (Math.abs(a - 2.5) < 0.03 || Math.abs(a - 2.82) < 0.02 || Math.abs(a - 2.95) < 0.015) continue;
+    const th = R()*TAU, r = a*(1 + (R() - 0.5)*0.12); out.push(r*Math.cos(th), r*Math.sin(th));
+  }
+  return new Float32Array(out);
+}
+function makeKuiper(){
+  const R = rng(11), out = [];
+  for (let i = 0; i < 1300; i++){
+    const u = R(); let a, ecc;
+    if (u < 0.25){ a = 39.4 + (R() - 0.5)*0.9; ecc = 0.4; } else if (u < 0.8){ a = 42 + R()*5.5; ecc = 0.12; } else { a = 30 + R()*20; ecc = 0.2; }
+    const th = R()*TAU, r = a*(1 + (R() - 0.5)*ecc); out.push(r*Math.cos(th), r*Math.sin(th));
+  }
+  return new Float32Array(out);
+}
+function makeOort(){
+  const R = rng(23), out = [], l0 = Math.log10(2000), l1 = Math.log10(100000);
+  for (let i = 0; i < 1600; i++){ const r = Math.pow(10, l0 + Math.pow(R(), 0.8)*(l1 - l0)), th = R()*TAU; out.push(r*Math.cos(th), r*Math.sin(th)); }
+  return new Float32Array(out);
+}
+const BELT = makeBelt(), KUIPER = makeKuiper(), OORT = makeOort();
+const ORBITS = PLANETS.map(el => ({el, pts:orbitPath(el, 256)}));
+
+/* ---------- frames ---------- */
+// Each frame: where the camera goes (R = view radius in AU, focus = object to centre on), what it is about (hi),
+// real facts (real) and, kept apart, what stories put there (fic). Fiction only appears in its own frame.
+const KCOL = {real:'#F2B544', exp:'#4FD1C5', tb:'#B79CFF', pop:'#FF8FB1'};
+const GROUP_NAMES = {start:'Today', sol:'Solar System', near:'Nearby stars', far:'Farther out'};
+const FRAMES = [
+  {id:'start', grp:'start', R:300, hi:['voyager1', 'dayring'], ring:['voyager1'], kind:'real', live:'intro', k:'18 November 2026', h:'One light-day', f:'',
+    real:'Voyager 1 is now so far away that its radio signals need a full day to reach us. Step through these frames, from the Moon outward, to see where that sits among the planets, the nearest stars and places that stories have made famous.'},
+  {id:'moon', grp:'sol', R:0.0045, hi:['moon'], kind:'real', k:'Our neighbour', h:'The Moon', f:'384,400 km · 1.3 light-seconds',
+    real:'The farthest place anyone has stood. Radio calls to the Apollo astronauts had a pause of about 2.6 seconds for the round trip.',
+    fic:[{l:'exp', s:'The Expanse', t:'called Luna; after the asteroid strikes in season five, Earth’s government runs things from here.'}]},
+  {id:'sun', grp:'sol', R:1.0, hi:['sun'], kind:'real', k:'Our star', h:'The Sun', f:'150 million km · 8.3 light-minutes',
+    real:'The sunlight on your face left the Sun about 8 minutes ago.'},
+  {id:'mars', grp:'sol', R:2.0, hi:['mars'], kind:'real', k:'Planet', h:'Mars', f:'3 to 22 light-minutes from Earth',
+    real:'The delay is too long to steer a rover live, so Mars rovers drive themselves.',
+    fic:[{l:'exp', s:'The Expanse', t:'home of the Martian Congressional Republic and its navy, the MCRN.'}]},
+  {id:'belt', grp:'sol', R:3.6, hi:['belt', 'ceres'], ring:['belt'], anchor:'belt', kind:'real', k:'Region', h:'The asteroid belt', f:'2.1–3.3 AU · 17 to 27 light-minutes from the Sun',
+    real:'Millions of rocks, yet so spread out that spacecraft cross it without steering around any. Ceres is the largest.',
+    fic:[{l:'exp', s:'The Expanse', t:'the Belt, home of the Belters and Ceres Station.'}]},
+  {id:'jupiter', grp:'sol', R:6.5, hi:['jupiter'], kind:'real', k:'Planet', h:'Jupiter', f:'5.2 AU · 43 light-minutes from the Sun',
+    real:'The largest planet. Voyager 1 used its gravity as a slingshot in 1979.'},
+  {id:'ganymede', grp:'sol', R:0.022, focus:'jupiter', hi:['ganymede', 'jupiter'], ring:['ganymede'], anchor:'ganymede', kind:'exp', k:'Real moon · The Expanse', h:'Ganymede', f:'1.07 million km from Jupiter · 3.6 light-seconds',
+    real:'Jupiter’s largest moon, bigger than the planet Mercury. Its position here is illustrative.',
+    fic:[{l:'exp', s:'The Expanse', t:'its domed farms feed the Belt and the outer planets.'}]},
+  {id:'doomsday', grp:'sol', fict:1, R:2.5, focus:'doomsday', hi:['doomsday', 'jupiter'], ring:['doomsday'], anchor:'doomsday', kind:'tb', k:'The Three-Body Problem', h:'The Doomsday Battle', f:'Out near Jupiter · about an hour of light from Earth',
+    fic:[{l:'tb', s:'The Three-Body Problem', t:'a single droplet, a mirror-smooth probe the size of a truck, destroys about 2,000 warships in roughly half an hour. It isn’t a light-speed weapon; it just out-accelerates everything. Place approximate.'}]},
+  {id:'saturn', grp:'sol', R:12, hi:['saturn'], kind:'real', k:'Planet', h:'Saturn', f:'9.5 AU · 80 light-minutes from the Sun',
+    real:'Voyager 1 flew past in 1980. A close look at its moon Titan sent the probe up and out of the planets’ plane.'},
+  {id:'interstellar', grp:'sol', fict:1, R:0.06, focus:'saturn', hi:['interstellar', 'saturn'], ring:['interstellar'], anchor:'interstellar', kind:'pop', k:'Pop culture · Interstellar', h:'Interstellar’s wormhole', f:'Next to Saturn · about 80 light-minutes from Earth',
+    real:'No wormhole has ever been found. Einstein’s equations allow them, but keeping one open would need matter with negative energy, which may not exist.',
+    fic:[{l:'pop', s:'Interstellar (2014)', t:'a wormhole appears near Saturn, a shortcut to another galaxy. Its spot here is illustrative.'}]},
+  {id:'phoebe', grp:'sol', R:0.2, focus:'saturn', hi:['phoebe', 'saturn'], ring:['phoebe'], anchor:'phoebe', kind:'exp', k:'Real moon · The Expanse', h:'Phoebe', f:'13 million km from Saturn · 43 light-seconds',
+    real:'A small, dark moon that circles Saturn backwards, probably a stray captured from the outer solar system. Its position here is illustrative.',
+    fic:[{l:'exp', s:'The Expanse', t:'where the protomolecule is found.'}]},
+  {id:'ring', grp:'sol', fict:1, R:22, hi:['ring'], kind:'exp', k:'The Expanse · fiction', h:'The Ring Gate', f:'≈20 AU from the Sun · 2.8 light-hours',
+    fic:[{l:'exp', s:'The Expanse', t:'the Ring opens just beyond Uranus’s orbit and leads to other star systems. Its spot here is illustrative.'}]},
+  {id:'neptune', grp:'sol', R:40, hi:['neptune'], kind:'real', k:'Planet', h:'Neptune, the last planet', f:'30 AU · 4.2 light-hours from the Sun',
+    real:'Only Voyager 2 has visited, in 1989. Farther out there are only icy worlds, empty space and the two Voyagers.'},
+  {id:'kuiper', grp:'sol', R:90, hi:['kuiper', 'pluto'], ring:['kuiper'], anchor:'kuiper', kind:'real', k:'Region', h:'The Kuiper Belt', f:'30–50 AU · 4 to 7 light-hours',
+    real:'A ring of icy worlds beyond Neptune, Pluto among them. From these distances, in 1990, Voyager 1 photographed Earth as a pale blue dot.'},
+  {id:'voyager1', grp:'sol', R:220, hi:['voyager1', 'voyager2'], ring:['voyager1'], anchor:'voyager1', kind:'real', live:'v1', k:'Spacecraft', h:'Voyager 1: one light-day', f:'25.9 billion km · 24 light-hours from Earth',
+    real:'Six times farther than Neptune, and outside the bubble of the Sun’s wind since 2012. Any question sent to it takes two days to answer. Voyager 2 trails at about 20 light-hours.'},
+  {id:'darkbattle', grp:'sol', fict:1, R:2500, hi:['darkbattle', 'battle1', 'battle2'], ring:['battle1', 'battle2'], anchor:'battle1', kind:'tb', k:'The Three-Body Problem', h:'Two Dark Battles', f:'Somewhere within ≈2,300 AU · places approximate',
+    fic:[{l:'tb', s:'The Three-Body Problem', t:'two groups of warships leave the Solar System in different directions, neither with enough fuel for every ship. In the first, only Blue Space survives; in the second, Bronze Age destroys Quantum. Three years later Bronze Age is about 2,300 AU out.'}]},
+  {id:'oort', grp:'sol', R:1.1e5, hi:['oort'], kind:'real', k:'Region, estimated', h:'The Oort Cloud', f:'≈2,000–100,000 AU · up to 1.6 light-years',
+    real:'A vast, thin shell of icy bodies where long-period comets come from. Voyager 1 will need about 300 years just to reach its inner edge.'},
+  {id:'tbfleet', grp:'near', fict:1, R:1.6e5, hi:['tbfleet'], ring:['tbfleet'], kind:'tb', k:'The Three-Body Problem', h:'The Trisolaran fleet’s route', f:'≈4.4 light-years · about 450 years',
+    fic:[{l:'tb', s:'The Three-Body Problem', t:'about 1,000 ships reach a tenth of light speed only in bursts, averaging about 1%. In Crisis Year 205 they are still halfway, 2.1 light-years out.'}]},
+  {id:'alphacen', grp:'near', R:3.6e5, hi:['alphacen'], kind:'real', k:'The nearest star system', h:'Alpha Centauri', f:'4.37 light-years · 77,000 years at Voyager’s speed',
+    real:'Two Sun-like stars, A and B, circle each other every 80 years. A small third star, Proxima, is the nearest single star to us. Proxima has one confirmed planet; a possible giant planet around A, spotted in 2025, is unconfirmed.',
+    fic:[{l:'tb', s:'The Three-Body Problem', t:'home of the Trisolarans (next frame).'}, {l:'pop', s:'Avatar', t:'Pandora orbits a giant planet around star A.'}, {l:'pop', s:'Lost in Space', t:'the Robinson family’s destination.'}, {l:'pop', s:'Civilization', t:'win the space race by landing a colony ship here.'}]},
+  {id:'trisolaris', grp:'near', fict:1, R:40, focus:'alphacen', hi:['trisolaris', 'alphacen'], ring:['trisolaris'], anchor:'trisolaris', kind:'tb', k:'The Three-Body Problem', h:'Trisolaris', f:'At Alpha Centauri · a signal takes about 4.4 years',
+    real:'Stars A and B are real. They sit close together and circle each other regularly every 80 years, while the small third star, Proxima, stays far away. Planets can exist in a system like this, on stable orbits around one of the stars or around both at once.',
+    fic:[{l:'tb', s:'The Three-Body Problem', t:'three suns move chaotically, so the Trisolarans’ world lurches between calm eras and scorching or freezing ones. Such a system is unlikely to exist: when three stars of similar weight move chaotically, one is usually flung out, leaving a stable pair (<a href="https://arxiv.org/abs/1909.05272" target="_blank" rel="noopener">Stone &amp; Leigh, <i>Nature</i>, 2019</a>). Ye Wenjie’s 1971 message takes about four years to arrive. Planet path illustrative.'}]},
+  {id:'wolf359', grp:'near', R:7.86*0.62*LYR, focus:'pm_wolf359', pair:'wolf359', hi:['wolf359'], kind:'pop', k:'Real star · Star Trek', h:'Wolf 359', f:'7.9 light-years · a dim red dwarf',
+    real:'One of the closest stars to the Sun, yet too faint to see without a telescope.',
+    fic:[{l:'pop', s:'Star Trek', t:'in The Next Generation (1990), one Borg ship destroys a fleet of 39 starships here, a lot like the Doomsday Battle.'}]},
+  {id:'epseri', grp:'near', R:10.47*0.62*LYR, focus:'pm_epseri', pair:'epseri', hi:['epseri'], kind:'pop', k:'Real star · Halo', h:'Epsilon Eridani', f:'10.5 light-years · a young star',
+    real:'Wrapped in belts of dust, with one confirmed giant planet.',
+    fic:[{l:'pop', s:'Halo', t:'the video games’ military world, Reach, orbits this star.'}]},
+  {id:'tauceti', grp:'near', R:11.91*0.62*LYR, focus:'pm_tauceti', pair:'tauceti', hi:['tauceti'], kind:'pop', k:'Real star · Project Hail Mary', h:'Tau Ceti', f:'11.9 light-years · 210,000 years at Voyager’s speed',
+    real:'One of the nearest stars like the Sun, with possible planets.',
+    fic:[{l:'pop', s:'Project Hail Mary', t:'(novel 2021, film 2026) the one nearby star that isn’t dimming, so a lone astronaut is sent to find out why.'}]},
+  {id:'eri40', grp:'near', R:16.26*0.62*LYR, focus:'pm_eri40', pair:'eri40', hi:['eri40'], kind:'pop', k:'Real star · Star Trek', h:'40 Eridani', f:'16.3 light-years · three stars together',
+    real:'An orange star a little smaller than the Sun, with a white dwarf and a red dwarf circling further out.',
+    fic:[{l:'pop', s:'Star Trek', t:'Vulcan, Spock’s home world, orbits star A.'}, {l:'pop', s:'Project Hail Mary', t:'home of Rocky, the alien engineer.'}]},
+  {id:'goals', grp:'near', fict:1, R:2.4e6, hi:['goals', 'nh558j2', 'bronzetarget'], ring:['nh558j2', 'bronzetarget'], anchor:'nh558j2', kind:'tb', k:'The Three-Body Problem', h:'Where the survivors headed', f:'NH558J2 at 18 light-years · an unnamed star at 26',
+    fic:[{l:'tb', s:'The Three-Body Problem', t:'Blue Space flies on toward NH558J2, about 2,000 years away. Bronze Age heads for a star with rocky planets toward Taurus until Earth calls it home. Blue Space’s direction is illustrative.'}]},
+  {id:'zetaret', grp:'near', R:39.3*0.62*LYR, focus:'pm_zetaret', pair:'zetaret', hi:['zetaret'], kind:'pop', k:'Real stars · Alien', h:'Zeta Reticuli', f:'39 light-years · two Sun-like stars',
+    real:'A wide pair of stars much like the Sun. From the Southern Hemisphere they look like a double star to the naked eye.',
+    fic:[{l:'pop', s:'Alien and Aliens', t:'the moon LV-426, where the alien eggs are found, is in this system.'}, {l:'pop', s:'UFO lore', t:'the 1961 Betty and Barney Hill abduction story is often tied to these stars.'}]},
+  {id:'radio', grp:'far', R:8.5e6, hi:['radio'], kind:'real', k:'How far our voices have gone', h:'The first radio broadcast', f:'≈106 light-years, growing one light-year a year',
+    real:'The first commercial radio broadcast, US election results from Pittsburgh in November 1920, has been travelling at light speed ever since. It faded below anything a receiver could pick up long ago, but the sphere it has crossed holds thousands of stars.'},
+  {id:'canopus', grp:'far', R:310*0.62*LYR, focus:'pm_canopus', pair:'canopus', hi:['canopus'], kind:'pop', k:'Real star · Dune', h:'Canopus', f:'≈310 light-years',
+    real:'The second-brightest star in the night sky, a giant about 70 times wider than the Sun.',
+    fic:[{l:'pop', s:'Dune', t:'Arrakis, the desert planet, is the third planet of Canopus.'}]},
+  {id:'betelgeuse', grp:'far', R:548*0.62*LYR, focus:'pm_betelgeuse', pair:'betelgeuse', hi:['betelgeuse'], kind:'pop', k:'Real star · Hitchhiker’s Guide', h:'Betelgeuse', f:'≈550 light-years (estimates vary)',
+    real:'The red supergiant on Orion’s shoulder. In the Sun’s place it would swallow Mars. It should explode as a supernova within the next 100,000 years.',
+    fic:[{l:'pop', s:'The Hitchhiker’s Guide to the Galaxy', t:'Ford Prefect comes from a small planet somewhere near Betelgeuse.'}]},
+];
+const LAYER_COL = {exp:'#4FD1C5', tb:'#B79CFF', pop:'#FF8FB1'};
+for (const f of FRAMES){ f.hiSet = new Set(f.hi); f.ringSet = new Set(f.ring || [f.anchor || f.hi[0]]); }
+const POP = [
+  {id:'wolf359', name:'Wolf 359', story:'Star Trek', rgb:'255,150,120', core:'#FFD0C0', d:'7.9 light-years'},
+  {id:'epseri', name:'Epsilon Eridani', story:'Halo', rgb:'255,215,160', core:'#FFEBD0', d:'10.5 light-years'},
+  {id:'tauceti', name:'Tau Ceti', story:'Project Hail Mary', rgb:'255,230,170', core:'#FFF2D2', d:'11.9 light-years'},
+  {id:'eri40', name:'40 Eridani', story:'Star Trek', rgb:'255,205,150', core:'#FFE6C8', d:'16.3 light-years'},
+  {id:'zetaret', name:'Zeta Reticuli', story:'Alien', rgb:'255,235,185', core:'#FFF4DA', d:'39 light-years'},
+  {id:'canopus', name:'Canopus', story:'Dune', rgb:'235,240,255', core:'#F4F7FF', d:'≈310 light-years'},
+  {id:'betelgeuse', name:'Betelgeuse', story:'Hitchhiker’s Guide', rgb:'255,140,90', core:'#FFC09A', d:'≈550 light-years'},
+];
+// half-way points between the Sun and a star, to frame both together; the wormhole sits next to Saturn
+function augment(w){ for (const p of POP) w['pm_' + p.id] = {dx:w[p.id].dx/2, dy:w[p.id].dy/2}; w.interstellar = w.wormhole; return w; }
+augment(world);
+
+/* ---------- DOM ---------- */
+const canvas = document.getElementById('sky'), ctx = canvas.getContext('2d');
+const starsCv = document.getElementById('stars'), sctx = starsCv.getContext('2d', {alpha:false});
+const panel = document.getElementById('panel'), cardEl = document.getElementById('card');
+const cK = document.getElementById('cK'), cH = document.getElementById('cH'), cF = document.getElementById('cF'), cBody = document.getElementById('cBody');
+const pGroup = document.getElementById('pGroup'), pCount = document.getElementById('pCount'), pBar = document.getElementById('pBar');
+const prevBtn = document.getElementById('prev'), nextBtn = document.getElementById('next');
+
+const SP = {gold:'#F2B544', ink:'#E8EDF4', muted:'#9AA6B8', region:'#AEBBCD', teal:'#4FD1C5', tb:'#B79CFF', tbSub:'rgba(214,200,255,0.95)', pop:'#FF8FB1', route:'rgba(196,178,255,0.9)', halo:'rgba(5,7,11,0.9)', dust:'rgba(185,198,218,0.5)', orbit:'rgba(160,182,210,0.26)'};
+// The site's own fonts: Newsreader for names on the map (italic for fiction), DejaVu Sans Mono for figures
+const SERIF = 'Newsreader, Georgia, serif', MONO = '"DejaVu Sans Mono", Menlo, ui-monospace, monospace';
+const FONT = {real:`400 14px ${SERIF}`, fic:`italic 400 14px ${SERIF}`, region:`400 10px ${MONO}`, ring:`400 10px ${MONO}`, route:`italic 400 13px ${SERIF}`};
+const F_SUB = `400 10.5px ${MONO}`;
+const F_TAG = `italic 400 12.5px ${SERIF}`;
+
+let W = 1, H = 1, DPR = 1, rafId = 0, labels = [], marks = [], rings = [], hiPts = {}, scaleBox = null, anchorPt = null;
+let LAYERS = [], DIML = 0;
+const state = {i:0, anim:null, cur:null, rev:1, revT0:0, fading:[], now:0};
+
+/* ---------- sizing ---------- */
+function resize(){
+  const r = canvas.getBoundingClientRect();
+  const nW = Math.max(1, Math.round(r.width)), nH = Math.max(1, Math.round(r.height));
+  const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2.6e6/(nW*nH))));
+  if (nW === W && nH === H && Math.abs(dpr - DPR) < 0.01){ measureAnchor(); return; }
+  W = nW; H = nH; DPR = dpr;
+  for (const c of [canvas, starsCv]){ c.width = Math.round(W*DPR); c.height = Math.round(H*DPR); }
+  paintStars(); measureAnchor(); fadeCheck(); labelVis.clear(); if (labels.length) planArrival(); requestDraw();
+}
+function paintStars(){
+  const s = sctx; s.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const g = s.createRadialGradient(W*0.5, H*0.45, 0, W*0.5, H*0.5, Math.hypot(W, H)*0.6);
+  g.addColorStop(0, '#0B111A'); g.addColorStop(1, '#04060A'); s.fillStyle = g; s.fillRect(0, 0, W, H);
+  const R = rng(42), n = Math.round(W*H/2400);
+  for (let i = 0; i < n; i++){
+    const x = R()*W, y = R()*H, m = R();
+    s.globalAlpha = 0.12 + m*m*0.6; s.fillStyle = m > 0.93 ? '#FFE9C7' : m > 0.86 ? '#C9DCFF' : '#FFFFFF';
+    const sz = m > 0.97 ? 1.5 : m > 0.8 ? 1.05 : 0.7; s.fillRect(x, y, sz, sz);
+  }
+  s.globalAlpha = 1;
+}
+// Where the line from the card to its subject starts: the canvas edge next to the card title
+function measureAnchor(){
+  const cr = canvas.getBoundingClientRect(), tr = cH.getBoundingClientRect();
+  if (!cr.width || !tr.width){ anchorPt = null; return; }
+  const side = tr.right <= cr.left + 2;   // card beside the map (wide screens) or below it (narrow)
+  anchorPt = side ? {x:0, y:Math.max(16, Math.min(H - 16, tr.top + tr.height/2 - cr.top))}
+                  : {x:Math.max(16, Math.min(W - 16, tr.left + 30 - cr.left)), y:H};
+}
+
+/* ---------- camera ---------- */
+function autoC(R){
+  let t = (Math.log10(R) - Math.log10(0.35))/(Math.log10(1.6) - Math.log10(0.35));
+  t = Math.max(0, Math.min(1, t)); t = t*t*(3 - 2*t);
+  const E = world.earth; return {x:E.x*(1 - t), y:E.y*(1 - t)};
+}
+const frameCenter = fr => fr.focus ? {x:world[fr.focus].dx, y:world[fr.focus].dy} : autoC(fr.R);
+function view(cam){
+  let R, c;
+  if (cam){ R = cam.R; c = cam; } else if (state.cur){ R = state.cur.R; c = state.cur; } else { const fr = FRAMES[state.i]; R = fr.R; c = frameCenter(fr); }
+  const half = Math.min(W, H)/2*0.86, k = half/R;
+  return {R, k, half, cx:W/2, cy:H/2, ox:c.x, oy:c.y, co:Math.hypot(c.x, c.y), diag:Math.hypot(W, H)/2};
+}
+const S = (v, x, y) => [v.cx + (x - v.ox)*v.k, v.cy - (y - v.oy)*v.k];
+const off = (x, y, m = 30) => x < -m || y < -m || x > W + m || y > H + m;
+const band = (v, lo, hi) => v.R >= lo && v.R <= hi;
+const annulusVisible = (v, lo, hi) => !((v.co - hi)*v.k > v.diag || (lo - v.co)*v.k > v.diag);
+function ringVisible(cx, cy, r){
+  const dx = Math.max(-cx, 0, cx - W), dy = Math.max(-cy, 0, cy - H), near = Math.hypot(dx, dy);
+  const far = Math.max(Math.hypot(cx, cy), Math.hypot(cx - W, cy), Math.hypot(cx, cy - H), Math.hypot(cx - W, cy - H));
+  return r >= near && r <= far;
+}
+function clipSeg(x0, y0, x1, y1, m = 0){
+  let t0 = 0, t1 = 1; const dx = x1 - x0, dy = y1 - y0;
+  const p = [-dx, dx, -dy, dy], q = [x0 + m, W + m - x0, y0 + m, H + m - y0];
+  for (let i = 0; i < 4; i++){ if (p[i] === 0){ if (q[i] < 0) return null; } else { const r = q[i]/p[i]; if (p[i] < 0){ if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; } } }
+  return [x0 + t0*dx, y0 + t0*dy, x0 + t1*dx, y0 + t1*dy];
+}
+// Smooth zoom-and-pan path (van Wijk & Nuij), as used by d3.interpolateZoom
+function zoomInterp(p0, p1){
+  const rho = Math.SQRT2, ux0 = p0[0], uy0 = p0[1], w0 = p0[2], ux1 = p1[0], uy1 = p1[1], w1 = p1[2];
+  const dx = ux1 - ux0, dy = uy1 - uy0, d2 = dx*dx + dy*dy;
+  if (d2 < 1e-12*w0*w0){ const S = Math.log(w1/w0)/rho; return {S:Math.abs(S), at:t => [ux0 + t*dx, uy0 + t*dy, w0*Math.exp(rho*t*S)]}; }
+  const d1 = Math.sqrt(d2), b0 = (w1*w1 - w0*w0 + 4*d2)/(4*w0*d1), b1 = (w1*w1 - w0*w0 - 4*d2)/(4*w1*d1);
+  const r0 = -Math.asinh(b0), r1 = -Math.asinh(b1), S = (r1 - r0)/rho, ch0 = Math.cosh(r0), sh0 = Math.sinh(r0);
+  return {S:Math.abs(S), at:t => { const s = t*S, u = w0/(2*d1)*(ch0*Math.tanh(rho*s + r0) - sh0); return [ux0 + u*dx, uy0 + u*dy, w0*ch0/Math.cosh(rho*s + r0)]; }};
+}
+
+/* ---------- navigation ---------- */
+function go(n, instant){
+  n = Math.max(0, Math.min(FRAMES.length - 1, n));
+  if (n === state.i && !instant) return;
+  const now = performance.now(), v = view(), fr = FRAMES[n], target = frameCenter(fr), from = FRAMES[state.i];
+  // the frame being left keeps its highlights for a moment and fades them out as the camera starts to move
+  const was = layerNow();
+  if (!instant && !reduced && (was.h > 0.01 || was.p > 0.01)) state.fading.push({fr:FRAMES[state.i], h0:was.h, p0:was.p, t0:now});
+  state.i = n; renderCard(fr);
+  try { history.replaceState(null, '', '#' + fr.id); } catch (_) {}
+  planArrival();
+  if (instant || reduced){ state.anim = null; state.cur = null; state.rev = 1; state.fading = []; labelVis.clear(); requestDraw(); return; }
+  const zi = zoomInterp([v.ox, v.oy, v.R], [target.x, target.y, fr.R]);
+  state.anim = {zi, from, t0:now, pr:0, dur:Math.max(1300, Math.min(3600, 900 + zi.S*270))};
+  requestDraw();
+}
+prevBtn.addEventListener('click', () => go(state.i - 1));
+nextBtn.addEventListener('click', () => go(state.i + 1));
+window.addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (['ArrowRight', 'ArrowDown', 'PageDown'].includes(e.key)){ go(state.i + 1); e.preventDefault(); }
+  else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)){ go(state.i - 1); e.preventDefault(); }
+  else if (e.key === 'Home'){ go(0); e.preventDefault(); }
+  else if (e.key === 'End'){ go(FRAMES.length - 1); e.preventDefault(); }
+});
+// Swipe left or right on the map to move between frames
+let swipe = null;
+canvas.addEventListener('pointerdown', e => { swipe = {x:e.clientX, y:e.clientY}; });
+canvas.addEventListener('pointerup', e => {
+  if (!swipe) return; const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y; swipe = null;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)*1.4) go(state.i + (dx < 0 ? 1 : -1));
+});
+canvas.addEventListener('pointercancel', () => { swipe = null; });
+window.addEventListener('hashchange', () => { const n = FRAMES.findIndex(f => '#' + f.id === location.hash); if (n >= 0 && n !== state.i) go(n); });
+
+/* ---------- card ---------- */
+function liveFact(fr){
+  const d = v1EarthAU(Date.now()), lt = d*LT;
+  if (fr.live === 'intro') return `Voyager 1 · ${fmtHMS(lt)} of light from Earth`;
+  if (fr.live === 'v1') return `${(d*AU_KM/1e9).toFixed(2)} billion km · ${fmtHMS(lt)} of light`;
+  return fr.f;
+}
+function renderCard(fr){
+  const n = FRAMES.length;
+  panel.dataset.kind = fr.kind; panel.dataset.fict = fr.fict ? '1' : '0';
+  pGroup.textContent = GROUP_NAMES[fr.grp]; pCount.textContent = `${state.i + 1} / ${n}`;
+  pBar.style.width = `${(state.i/(n - 1))*100}%`;
+  cK.textContent = fr.k; cH.textContent = fr.h; cF.textContent = liveFact(fr); cF.hidden = !cF.textContent;
+  const fic = fr.fic || [];
+  cBody.innerHTML = (fr.real ? `<section class="c-sec"><p class="c-lab">Real</p><p class="c-b">${fr.real}</p></section>` : '')
+    + (fic.length ? `<section class="c-sec"><p class="c-lab fic">In fiction</p><ul class="c-fic">${fic.map(x => `<li class="f-${x.l}"><b>${x.s}</b>: ${x.t}</li>`).join('')}</ul></section>` : '')
+    + (state.i === 0 ? '<p class="c-hint">Use Next and Previous, the arrow keys, or swipe across the map.</p>' : '');
+  prevBtn.disabled = state.i === 0; nextBtn.disabled = state.i === n - 1;
+  nextBtn.textContent = state.i === 0 ? 'Start →' : 'Next →';
+  cardEl.classList.remove('in'); void cardEl.offsetWidth; cardEl.classList.add('in'); cardEl.scrollTop = 0;
+  requestAnimationFrame(() => { measureAnchor(); fadeCheck(); requestDraw(); });
+}
+
+// A soft fade at the bottom of the card while more text is below
+function fadeCheck(){ cardEl.classList.toggle('fade', cardEl.scrollHeight - cardEl.scrollTop - cardEl.clientHeight > 4); }
+cardEl.addEventListener('scroll', fadeCheck, {passive:true});
+
+/* ---------- drawing helpers ---------- */
+// Each drawn frame is a stack of layers: frames still fading out, plus the current one.
+// h = how strongly its highlights and fiction show; p = how present its frame-only objects are.
+const FO = 650;                                                       // ms for a frame's highlights to fade out
+const ease01 = t => t <= 0 ? 0 : t >= 1 ? 1 : t*t*(3 - 2*t);
+const ramp = (x, a, b) => ease01((x - a)/(b - a));
+// 1 inside a zoom band, fading to 0 just outside it (d decades), so labels don't pop at the band edges
+const inBand = (v, lo, hi, d = 0.06) => { const L = Math.log10(v.R); return 1 - ease01(Math.max(lo > 0 ? Math.log10(lo) - L : -1, L - Math.log10(hi))/d); };
+const HL = id => { let m = 0; for (const l of LAYERS) if (l.h > m && l.fr.hiSet.has(id)) m = l.h; return m; };
+let KEEP = new Set();   // objects shown by both the frame being left and the new one stay fully present in between
+const Pr = id => { if (KEEP.has(id)) return 1; let m = 0; for (const l of LAYERS) if (l.p > m && l.fr.hiSet.has(id)) m = l.p; return m; };
+const DIM = () => 1 - 0.5*DIML;                                       // context fades a little while a frame is shown
+const aOf = id => { if (id === 'sun') return 1; const h = HL(id); return id === 'earth' ? 1 - 0.2*DIML*(1 - h) : DIM() + (1 - DIM())*h; };
+function layerNow(){
+  const a = state.anim; if (!a) return {h:state.rev, p:1};
+  const t = a.pr*a.dur, hs = a.dur - Math.min(800, 0.38*a.dur), ps = a.dur - Math.min(1100, 0.5*a.dur);
+  return {h:ease01((t - hs)/(a.dur - hs)), p:ease01((t - ps)/(a.dur - ps))};
+}
+// Where every label will sit once the camera arrives: computed with an invisible draw of the final view before the flight,
+// so labels take those spots on the way in instead of hopping from side to side
+let DRY = false;
+const destPlace = new Map(), pickMem = {dest:new Map(), last:new Map()};
+function planArrival(){
+  const fr = FRAMES[state.i], c = frameCenter(fr);
+  destPlace.clear(); pickMem.dest.clear();
+  DRY = true; try { draw({x:c.x, y:c.y, R:fr.R}); } finally { DRY = false; }
+}
+// Order choices (e.g. where on a ring its name goes): the arrival's pick, then the last one used, then the defaults
+function pickOrder(key, list){
+  if (DRY) return list;
+  const out = []; for (const a of [pickMem.dest.get(key), pickMem.last.get(key)]) if (a != null && !out.includes(a)) out.push(a);
+  for (const a of list) if (!out.includes(a)) out.push(a); return out;
+}
+const pickDone = (key, a) => (DRY ? pickMem.dest : pickMem.last).set(key, a);
+function disc(x, y, r, col){ ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = col; ctx.fill(); }
+function ficRing(x, y, r, col){ ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.stroke(); }
+function starGlyph(x, y, rgb, core, spike){
+  const g = ctx.createRadialGradient(x, y, 0, x, y, 15); g.addColorStop(0, `rgba(${rgb},0.85)`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 15, 0, TAU); ctx.fill();
+  if (spike){ ctx.strokeStyle = `rgba(${rgb},0.75)`; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - 9, y); ctx.lineTo(x + 9, y); ctx.moveTo(x, y - 9); ctx.lineTo(x, y + 9); ctx.stroke(); }
+  disc(x, y, 2.6, core);
+}
+function burst(x, y){
+  ctx.save(); ctx.strokeStyle = SP.tb; ctx.lineWidth = 1.4;
+  for (let i = 0; i < 8; i++){ const a = i*Math.PI/4, r1 = i % 2 ? 3 : 2.2, r2 = i % 2 ? 7.5 : 5.5; ctx.beginPath(); ctx.moveTo(x + Math.cos(a)*r1, y + Math.sin(a)*r1); ctx.lineTo(x + Math.cos(a)*r2, y + Math.sin(a)*r2); ctx.stroke(); }
+  ctx.restore(); disc(x, y, 2, SP.tb);
+}
+// Remember a marker (labels keep clear of it); ring it if it is the frame's subject
+function mark(id, x, y, r){
+  marks.push({x, y, r});
+  let ringed = false;
+  for (const l of LAYERS){
+    if (!l.fr.ringSet.has(id)) continue;
+    ringed = true; if (l.h <= 0) continue;
+    rings.push({x, y, r:r + 12});
+    ctx.save(); ctx.strokeStyle = l.col; ctx.globalAlpha = 0.28*l.h; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x, y, r + 9, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = l.h; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(x, y, r + 9, 0, TAU); ctx.stroke(); ctx.restore();
+  }
+  hiPts[id] = {x, y, r:ringed ? r + 9 : r + 4};
+}
+function hiRegion(id, sx, sy, k, lo, hi, mid){
+  for (const l of LAYERS){
+    if (l.h <= 0 || !l.fr.ringSet.has(id)) continue;
+    ctx.save(); ctx.strokeStyle = l.col; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.85*l.h;
+    for (const r of [lo, hi]){ ctx.beginPath(); ctx.arc(sx, sy, r*k, 0, TAU); ctx.stroke(); }
+    ctx.restore();
+  }
+  const a = anchorPt ? Math.atan2(anchorPt.y - sy, anchorPt.x - sx) : -2.4;
+  hiPts[id] = {x:sx + Math.cos(a)*mid*k, y:sy + Math.sin(a)*mid*k, r:0};
+}
+const lab = (o) => labels.push(o);
+
+/* ---------- main draw ---------- */
+function draw(cam){
+  const v = view(cam), fr = FRAMES[state.i], now = state.now || performance.now();
+  LAYERS = [];
+  if (DRY) LAYERS.push({fr, h:1, p:1});
+  else {
+    for (const f of state.fading){ const w = 1 - ease01((now - f.t0)/FO); if (w > 0) LAYERS.push({fr:f.fr, h:f.h0*w, p:f.p0*w}); }
+    const ln = layerNow(); LAYERS.push({fr, h:ln.h, p:ln.p});
+  }
+  DIML = 0; for (const l of LAYERS){ l.col = KCOL[l.fr.kind]; if (l.h > DIML) DIML = l.h; }
+  KEEP = new Set(); if (!DRY && state.anim) for (const id of state.anim.from.hi) if (fr.hiSet.has(id)) KEEP.add(id);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  labels = []; marks = []; rings = []; hiPts = {}; scaleBox = null;
+  const [sx, sy] = S(v, 0, 0);
+  drawOort(v, sx, sy);
+  drawLightRings(v);
+  drawDust(v, BELT, 2.1, 3.3, 'belt', sx, sy, 1.1);
+  drawDust(v, KUIPER, 30, 50, 'kuiper', sx, sy, 1.2);
+  drawOrbits(v, sx, sy);
+  drawTrails(v);
+  drawRadio(v, sx, sy);
+  drawFiction(v, sx, sy);
+  drawSun(v, sx, sy);
+  drawBodies(v, sx, sy);
+  drawStars(v);
+  drawPopStars(v, sx, sy);
+  drawRegionLabels(v);
+  drawScale(v);
+  drawLeader();
+  placeLabels();
+}
+
+function drawOort(v, sx, sy){
+  const r1 = 100000*v.k;
+  if (r1 < 30 || !annulusVisible(v, 2000, 100000) || 2000*v.k > v.diag*30) return;
+  ctx.save(); ctx.globalAlpha = aOf('oort')*ramp(r1, 30, 90);
+  const g = ctx.createRadialGradient(sx, sy, 1200*v.k, sx, sy, r1);
+  g.addColorStop(0, 'rgba(130,160,210,0)'); g.addColorStop(0.06, 'rgba(130,160,210,0.08)'); g.addColorStop(0.45, 'rgba(130,160,210,0.045)'); g.addColorStop(1, 'rgba(130,160,210,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(170,195,235,0.42)'; ctx.beginPath();
+  for (let i = 0; i < OORT.length; i += 2){ const x = sx + OORT[i]*v.k, y = sy - OORT[i + 1]*v.k; if (x < 0 || y < 0 || x > W || y > H) continue; ctx.rect(x, y, 1.2, 1.2); }
+  ctx.fill(); ctx.restore();
+  hiRegion('oort', sx, sy, v.k, 2000, 100000, 100000);
+}
+const LRINGS = [[1,'1 light-second'],[60,'1 light-minute'],[600,'10 light-minutes'],[3600,'1 light-hour'],[36000,'10 light-hours'],[86400,'1 light-day'],[604800,'1 light-week'],[2629800,'1 light-month'],[31557600,'1 light-year'],[315576000,'10 light-years'],[3155760000,'100 light-years']];
+function drawLightRings(v){
+  const E = world.earth, [ex, ey] = S(v, E.x, E.y), dw = HL('dayring'), rw = HL('radio');
+  for (const [s, name] of LRINGS){
+    const rp = s/LT*v.k, day = s === 86400, q = rp/v.half;
+    if (q < 0.12 || q > 2.4 || !ringVisible(ex, ey, rp)) continue;
+    let a = (day ? DIM() + (1 - DIM())*dw : DIM())*ramp(q, 0.12, 0.24);
+    if (s === 3155760000) a *= 1 - rw;                     // the radio bubble already marks ~100 light-years
+    if (a <= 0.01) continue;
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.arc(ex, ey, rp, 0, TAU);
+    ctx.setLineDash(day ? [7, 5] : [2, 5]); ctx.lineWidth = day ? 1.4 + 0.6*dw : 1;
+    ctx.strokeStyle = day ? 'rgba(242,181,68,0.8)' : 'rgba(125,180,255,0.34)'; ctx.stroke(); ctx.restore();
+    const la = day ? a : a*(1 - ramp(q, 1.2, 1.35));
+    if (la <= 0.02) continue;
+    for (const ang of pickOrder('ring' + s, [-52, -128, -90, -20, -160, 30, 150, 90])){
+      const lx = ex + rp*Math.cos(ang*DEG), ly = ey + rp*Math.sin(ang*DEG);
+      if (lx > 30 && lx < W - 30 && ly > 24 && ly < H - 24){ pickDone('ring' + s, ang); lab({text:name, x:lx, y:ly, r:0, style:'ring', pri:day ? 72 : 48, color:day ? SP.gold : 'rgba(165,205,255,0.95)', alpha:la}); break; }
+    }
+  }
+}
+function drawDust(v, arr, lo, hi, id, sx, sy, sz){
+  if (hi*v.k < 12 || !annulusVisible(v, lo, hi)) return;
+  ctx.save(); ctx.globalAlpha = aOf(id)*ramp(hi*v.k, 12, 30); ctx.fillStyle = SP.dust; ctx.beginPath();
+  for (let i = 0; i < arr.length; i += 2){ const x = sx + arr[i]*v.k, y = sy - arr[i + 1]*v.k; if (x < 0 || y < 0 || x > W || y > H) continue; ctx.rect(x, y, sz, sz); }
+  ctx.fill(); ctx.restore();
+  hiRegion(id, sx, sy, v.k, lo, hi, (lo + hi)/2);
+}
+function drawOrbits(v, sx, sy){
+  for (const o of ORBITS){
+    const el = o.el, q = el.a*(1 - el.e), Q = el.a*(1 + el.e);
+    if (Q*v.k < 3 || !annulusVisible(v, q, Q)) continue;
+    let pts = o.pts; const ak = el.a*v.k;
+    if (ak > 2000){ const n = Math.min(6000, Math.ceil(Math.PI/Math.acos(1 - 0.4/ak))); if (n > 256) pts = orbitPath(el, n); }
+    ctx.save(); ctx.globalAlpha = aOf(el.id)*ramp(Q*v.k, 3, 10); ctx.beginPath();
+    for (let i = 0; i < pts.length; i += 2){ const x = sx + pts[i]*v.k, y = sy - pts[i + 1]*v.k; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+    ctx.strokeStyle = el.id === 'earth' ? 'rgba(111,179,255,0.55)' : el.id === 'pluto' ? 'rgba(205,185,165,0.3)' : SP.orbit;
+    ctx.lineWidth = 1; ctx.stroke();
+    const h = HL(el.id); if (h > 0){ ctx.globalAlpha *= h; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.stroke(); }
+    ctx.restore();
+  }
+}
+function drawTrails(v){
+  const trail = (id, r0, col) => {
+    const p = world[id]; if (p.r*v.k < 24 || p.r*v.k > 60000 || v.co > 5000) return;
+    const a = Math.atan2(p.dy, p.dx), [x0, y0] = S(v, r0*Math.cos(a), r0*Math.sin(a)), [x1, y1] = S(v, p.dx, p.dy);
+    const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, col + '0)'); g.addColorStop(1, col + '0.6)');
+    ctx.save(); ctx.globalAlpha = aOf(id); ctx.strokeStyle = g; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.restore();
+  };
+  trail('voyager1', 9.6, 'rgba(242,181,68,'); trail('voyager2', 30, 'rgba(220,192,138,');
+}
+function drawRadio(v, sx, sy){
+  const w = HL('radio'); if (w <= 0) return;
+  const r = radioLY()*LYR*v.k; if (r < 20 || !ringVisible(sx, sy, r)) return;
+  ctx.save(); ctx.globalAlpha = w;
+  const g = ctx.createRadialGradient(sx, sy, r*0.8, sx, sy, r); g.addColorStop(0, 'rgba(120,200,255,0)'); g.addColorStop(1, 'rgba(120,200,255,0.12)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fill();
+  ctx.strokeStyle = KCOL.real; ctx.lineWidth = 1.8; ctx.stroke(); ctx.restore();
+  for (const a of pickOrder('radio', [-40, -140, 40, 140, -90, 90])){
+    const lx = sx + r*Math.cos(a*DEG), ly = sy + r*Math.sin(a*DEG);
+    if (lx > 30 && lx < W - 30 && ly > 30 && ly < H - 30){ pickDone('radio', a); lab({text:'First radio broadcast, 1920', sub:`≈${Math.floor(radioLY())} light-years out`, x:lx, y:ly, r:2, pri:90, color:'#BFE3FF', alpha:w}); break; }
+  }
+  const an = anchorPt ? Math.atan2(anchorPt.y - sy, anchorPt.x - sx) : -2.4;
+  hiPts.radio = {x:sx + Math.cos(an)*r, y:sy + Math.sin(an)*r, r:0};
+}
+// Fiction appears only in its own frame, and fades in once the camera arrives
+function drawFiction(v, sx, sy){
+  const route = (o, hot, a) => {
+    const [x1, y1] = S(v, o.dx, o.dy), sg = clipSeg(sx, sy, x1, y1, 20); if (!sg) return null;
+    ctx.save(); ctx.globalAlpha = a; ctx.setLineDash([6, 6]); ctx.strokeStyle = hot ? 'rgba(205,185,255,0.95)' : 'rgba(183,156,255,0.5)'; ctx.lineWidth = hot ? 1.6 : 1.1;
+    ctx.beginPath(); ctx.moveTo(sg[0], sg[1]); ctx.lineTo(sg[2], sg[3]); ctx.stroke(); ctx.restore(); return sg;
+  };
+  const marker = (a, id, glyph, text, sub, r, pri, col, subCol) => {
+    const o = world[id], [x, y] = S(v, o.dx, o.dy); if (off(x, y)) return;
+    ctx.save(); ctx.globalAlpha = a; glyph(x, y); ctx.restore(); mark(id, x, y, r);
+    lab({text, sub, subColor:subCol || SP.tbSub, style:'fic', x, y, r:r + 2, pri, color:col || SP.tb, alpha:a});
+  };
+  let w;
+  if ((w = HL('ring')) > 0) marker(w, 'ring', (x, y) => ficRing(x, y, 4.5, SP.teal), 'The Ring Gate', 'The Expanse · spot illustrative', 4.5, 95, SP.teal, 'rgba(79,209,197,0.9)');
+  if ((w = HL('doomsday')) > 0) marker(w, 'doomsday', burst, 'Doomsday Battle', 'Crisis Year 205 · place approximate', 6, 95);
+  if ((w = HL('tbfleet')) > 0){
+    const sg = route(world.alphacen, true, w);
+    if (sg && Math.hypot(sg[2] - sg[0], sg[3] - sg[1]) > 140) lab({text:'Trisolaran fleet route, toward Alpha Centauri', x:(sg[0] + sg[2])/2, y:(sg[1] + sg[3])/2, r:4, pri:70, style:'route', color:SP.route, alpha:w});
+    marker(w, 'tbfleet', (x, y) => { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI/4); ctx.fillStyle = SP.tb; ctx.fillRect(-3.4, -3.4, 6.8, 6.8); ctx.restore(); }, 'Fleet in Crisis Year 205', 'still halfway, 2.1 light-years out', 5, 95);
+  }
+  if ((w = HL('darkbattle')) > 0){
+    route(world.nh558j2, false, w); route(world.bronzetarget, false, w);
+    if (1000*v.k >= 30){
+      const a = w*ramp(1000*v.k, 30, 60);
+      marker(a, 'battle1', burst, 'Dark Battle 1', 'Blue Space’s group', 7, 95, '#D6C8FF', '#D3DAE4');
+      marker(a, 'battle2', burst, 'Dark Battle 2', 'Bronze Age vs Quantum', 7, 94, '#D6C8FF', '#D3DAE4');
+    }
+  }
+  if ((w = HL('goals')) > 0){
+    route(world.nh558j2, true, w); route(world.bronzetarget, true, w);
+    for (const [id, name, sub] of [['nh558j2', 'NH558J2', '18 light-years · Blue Space’s goal'], ['bronzetarget', 'Bronze Age’s goal', '26 light-years · toward Taurus']])
+      marker(w, id, (x, y) => { starGlyph(x, y, '190,160,255', '#E6DCFF', false); ficRing(x, y, 8, SP.tb); }, name, sub, 8, 95);
+  }
+  if ((w = HL('interstellar')) > 0){
+    marker(w, 'interstellar', (x, y) => {
+      const g = ctx.createRadialGradient(x, y, 1, x, y, 11); g.addColorStop(0, 'rgba(10,12,20,1)'); g.addColorStop(0.55, 'rgba(255,143,177,0.55)'); g.addColorStop(1, 'rgba(255,143,177,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 11, 0, TAU); ctx.fill(); ficRing(x, y, 6, SP.pop);
+    }, 'Interstellar’s wormhole', 'spot illustrative', 7, 95, SP.pop, 'rgba(255,190,210,0.9)');
+  }
+}
+function drawSun(v, x, y){
+  if (off(x, y, 60)) return;
+  const r = Math.max(3.4, 0.00465*v.k), gr = Math.max(16, r*3);
+  const g = ctx.createRadialGradient(x, y, 0, x, y, gr);
+  g.addColorStop(0, 'rgba(255,236,190,0.95)'); g.addColorStop(Math.min(0.9, r/gr), 'rgba(255,214,140,0.55)'); g.addColorStop(1, 'rgba(255,190,100,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, gr, 0, TAU); ctx.fill();
+  disc(x, y, r, '#FFF3D6'); mark('sun', x, y, r);
+  const merged = 172*v.k < 14;
+  if (!merged) lab({text:'Sun', sub:v.R <= 3 ? fmtLTshort(norm3(world.earth)*LT) + ' from Earth' : null, x, y, r, pri:Pr('sun') > 0 ? 99 : 80, color:'#FFE2A8'});
+  else if (v.R < 7e5) lab({text:'Sun, planets & Voyager 1', sub:'all inside this dot', subColor:'rgba(242,205,130,0.92)', x, y, r:6, pri:85, color:SP.gold, alpha:DIM()});
+  else lab({text:'Sun', x, y, r:5, pri:85, color:'#FFE2A8'});
+}
+function drawBodies(v, sx, sy){
+  const w = world, E = w.earth, k = v.k;
+  if (v.co < 3000){
+    for (const el of PLANETS){
+      const id = el.id, orb = el.a*k; if (orb < 3) continue;
+      const o = w[id], [x, y] = S(v, o.dx, o.dy); if (off(x, y)) continue;
+      const r = Math.max(el.base, el.rad/AU_KM*k), a = aOf(id)*ramp(orb, 3, 8);
+      ctx.save(); ctx.globalAlpha = a;
+      if (id === 'earth'){ ctx.beginPath(); ctx.arc(x, y, r + 2.5, 0, TAU); ctx.strokeStyle = 'rgba(111,179,255,0.35)'; ctx.lineWidth = 1; ctx.stroke(); }
+      disc(x, y, r, el.col);
+      if (id === 'saturn' && r >= 3){ ctx.beginPath(); ctx.ellipse(x, y, r*2.1, r*0.7, -0.45, 0, TAU); ctx.strokeStyle = 'rgba(232,208,140,0.7)'; ctx.lineWidth = 1; ctx.stroke(); }
+      ctx.restore(); mark(id, x, y, r);
+      const p = Pr(id), la = Math.max(inBand(v, el.band[0], el.band[1])*ramp(orb, 12, 20), p);
+      if (la > 0.02) lab({text:el.name, sub:id === 'earth' ? 'you are here' : fmtLTshort(dist3(o, E)*LT), x, y, r, pri:p > 0 ? 99 : id === 'earth' ? 78 : 54, color:SP.ink, alpha:a*la});
+    }
+    const mo = MOON_AU*k;
+    if (mo >= 8){
+      const [x0, y0] = S(v, E.x, E.y), a = aOf('moon')*ramp(mo, 8, 20);
+      ctx.save(); ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(x0, y0, mo, 0, TAU); ctx.strokeStyle = 'rgba(200,205,215,0.22)'; ctx.lineWidth = 1; ctx.stroke();
+      const [x, y] = S(v, w.moon.dx, w.moon.dy), r = Math.max(2.4, 1737.4/AU_KM*k);
+      disc(x, y, r, '#C9CCD2'); ctx.restore(); mark('moon', x, y, r);
+      const p = Pr('moon'), la = Math.max(inBand(v, 0, 0.05), p);
+      if (la > 0.02) lab({text:'Moon', sub:'1.3 light-sec', x, y, r, pri:p > 0 ? 99 : 79, color:SP.ink, alpha:a*la});
+    }
+    // Moons that only appear in their own frame; they fade in as the camera arrives and out as it leaves
+    const moonOf = (id, parent, dist, name, sub) => {
+      const rp = dist*k, p = Pr(id)*ramp(rp, 8, 22); if (p <= 0.01) return;
+      const pp = w[parent], [px, py] = S(v, pp.dx, pp.dy); if (off(px, py, rp + 40)) return;
+      const o = w[id], [x, y] = S(v, o.dx, o.dy);
+      ctx.save(); ctx.globalAlpha = p;
+      ctx.beginPath(); ctx.arc(px, py, rp, 0, TAU); ctx.strokeStyle = 'rgba(200,205,215,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+      if (!off(x, y)) disc(x, y, 2.8, '#D9D2C4');
+      ctx.restore();
+      if (off(x, y)) return;
+      mark(id, x, y, 2.8);
+      lab({text:name, sub, x, y, r:2.8, pri:99, color:SP.ink, alpha:p});
+    };
+    moonOf('ganymede', 'jupiter', 0.007155, 'Ganymede', 'Jupiter’s largest moon');
+    moonOf('phoebe', 'saturn', 0.08657, 'Phoebe', 'Saturn’s outer moon');
+    const pc = Pr('ceres')*ramp(2.77*k, 30, 60);
+    if (pc > 0.01){
+      const o = w.ceres, [x, y] = S(v, o.dx, o.dy);
+      if (!off(x, y)){ ctx.save(); ctx.globalAlpha = pc; disc(x, y, 2.2, '#BEB6A8'); ctx.restore(); mark('ceres', x, y, 2.2); lab({text:'Ceres', sub:'largest asteroid', x, y, r:2.2, pri:90, color:SP.ink, alpha:pc}); }
+    }
+    if (144*k >= 6){
+      const o = w.voyager2, [x, y] = S(v, o.dx, o.dy);
+      if (!off(x, y)){
+        const a = aOf('voyager2')*ramp(144*k, 6, 14), p = Pr('voyager2');
+        ctx.save(); ctx.globalAlpha = a; disc(x, y, 2.8, '#DCC08A'); ctx.restore(); mark('voyager2', x, y, 2.8);
+        if (p > 0.01) lab({text:'Voyager 2', sub:fmtLTshort(dist3(o, E)*LT), x, y, r:2.8, pri:90, color:SP.ink, alpha:a*p});
+      }
+    }
+  }
+  if (172*k >= 14){
+    const v1 = w.voyager1, ltV1 = dist3(v1, E)*LT, [x, y] = S(v, v1.dx, v1.dy);
+    if (!off(x, y)){
+      const a = aOf('voyager1')*ramp(172*k, 14, 30);
+      ctx.save(); ctx.globalAlpha = a;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 16); g.addColorStop(0, 'rgba(242,181,68,0.45)'); g.addColorStop(1, 'rgba(242,181,68,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 16, 0, TAU); ctx.fill();
+      disc(x, y, 3.8, SP.gold); ctx.restore(); mark('voyager1', x, y, 4);
+      const p = Pr('voyager1'), la = Math.max(inBand(v, 0, 1500), p);
+      if (la > 0.02) lab({text:'Voyager 1', sub:Math.abs(ltV1 - 86400) < 1800 ? '1 light-day from Earth' : fmtLTshort(ltV1), subColor:'rgba(242,205,130,0.92)', x, y, r:8, pri:p > 0 ? 99 : 70, color:SP.gold, alpha:a*la});
+    }
+  }
+}
+function drawStars(v){
+  const w = world, ac = w.alphacen, [ax, ay] = S(v, ac.dx, ac.dy), sep = 23.3*v.k;
+  if (off(ax, ay, sep + 60)) return;
+  const a = aOf('alphacen');
+  // One glyph when A and B are too close to separate; they cross-fade into the two real stars as the camera zooms in
+  const one = 1 - ramp(sep, 14, 34), two = 1 - one;
+  if (one > 0.01 && !off(ax, ay)){
+    ctx.save(); ctx.globalAlpha = a*one; starGlyph(ax, ay, '255,225,160', '#FFF0CF', true); ctx.restore(); mark('alphacen', ax, ay, 4);
+    const p = Pr('alphacen'), la = Math.max(inBand(v, 4e4, Infinity), p)*one;
+    if (la > 0.02) lab({text:'Alpha Centauri', sub:'4.37 light-years', x:ax, y:ay, r:7, pri:p > 0 ? 99 : 62, color:'#FFE3A6', alpha:a*la});
+  }
+  if (two <= 0.01) return;
+  const yr = yearNow(), rel = abRel(yr);
+  const A = [ac.dx - AB.fA*rel[0], ac.dy - AB.fA*rel[1]], B = [ac.dx + AB.fB*rel[0], ac.dy + AB.fB*rel[1]];
+  ctx.save(); ctx.globalAlpha = two; ctx.strokeStyle = 'rgba(255,220,160,0.28)'; ctx.lineWidth = 1;
+  for (const [f, sgn] of [[AB.fA, -1], [AB.fB, 1]]){
+    ctx.beginPath(); AB_PATH.forEach((p, i) => { const [x, y] = S(v, ac.dx + sgn*f*p[0], ac.dy + sgn*f*p[1]); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke();
+  }
+  ctx.restore();
+  const tw = HL('trisolaris')*two;
+  if (tw > 0){
+    ctx.save(); ctx.globalAlpha = tw;
+    const t0 = yr*0.35, n = 220, span = 26;
+    for (let seg = 0; seg < 4; seg++){
+      ctx.beginPath();
+      for (let i = 0; i <= n/4; i++){ const t = t0 - span + (seg*n/4 + i)/n*span, q = triPos(t), [x, y] = S(v, ac.dx + q[0], ac.dy + q[1]); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+      ctx.strokeStyle = `rgba(183,156,255,${0.1 + seg*0.12})`; ctx.lineWidth = 1.1; ctx.stroke();
+    }
+    const q = triPos(t0), [tx, ty] = S(v, ac.dx + q[0], ac.dy + q[1]);
+    ficRing(tx, ty, 4, SP.tb); ctx.restore(); mark('trisolaris', tx, ty, 4);
+    lab({text:'Trisolaris', sub:'path illustrative', subColor:SP.tbSub, style:'fic', x:tx, y:ty, r:4, pri:99, color:SP.tb, alpha:tw});
+  }
+  const [xa, ya] = S(v, A[0], A[1]), [xb, yb] = S(v, B[0], B[1]), sr = Math.max(4, 0.0057*v.k);
+  ctx.save(); ctx.globalAlpha = two;
+  starGlyph(xa, ya, '255,230,170', '#FFF4D8', false); disc(xa, ya, sr, '#FFF1CF');
+  starGlyph(xb, yb, '255,200,140', '#FFE2C0', false); disc(xb, yb, sr*0.86, '#FFD9B0');
+  ctx.restore();
+  mark('alphaA', xa, ya, sr); mark('alphaB', xb, yb, sr);
+  lab({text:'Alpha Centauri A', sub:'real star', x:xa, y:ya, r:sr, pri:74, color:'#FFE3A6', alpha:two});
+  lab({text:'Alpha Centauri B', sub:'real star', x:xb, y:yb, r:sr, pri:73, color:'#FFD2A0', alpha:two});
+}
+// Real stars that stories use: plain, dimmed dots, except in their own frame
+function drawPopStars(v, sx, sy){
+  for (const p of POP){
+    const o = world[p.id], [x, y] = S(v, o.dx, o.dy), m = Pr(p.id), hw = HL(p.id), app = inBand(v, o.r*0.08, Infinity, 0.15);
+    if (app <= 0.01 && m <= 0.01) continue;
+    if (hw > 0 && !off(sx, sy, 80) && !off(x, y, 80)){
+      ctx.save(); ctx.globalAlpha = hw; ctx.setLineDash([4, 5]); ctx.strokeStyle = 'rgba(232,237,244,0.5)'; ctx.lineWidth = 1.1;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(x, y); ctx.stroke(); ctx.restore();
+      lab({text:p.d + ' from the Sun', x:(sx + x)/2, y:(sy + y)/2, r:0, style:'ring', pri:88, color:'#E8EDF4', alpha:hw});
+    }
+    if (off(x, y)) continue;
+    if (m < 1 && app > 0.01){ ctx.save(); ctx.globalAlpha = (0.45*DIM() + 0.1)*app*(1 - m); disc(x, y, 1.8, p.core); ctx.restore(); }
+    if (m > 0.01){
+      ctx.save(); ctx.globalAlpha = m; starGlyph(x, y, p.rgb, p.core, true); ctx.restore(); mark(p.id, x, y, 6);
+      lab({text:p.name, sub:W < 560 ? null : p.d, tag:p.story, tagColor:SP.pop, x, y, r:9, pri:99, color:'#FFE9D6', alpha:m});
+    }
+  }
+}
+function drawRegionLabels(v){
+  if (v.co > 3e5) return;
+  const add = (id, text, sub, r, deg, pri, f) => {
+    const p = Pr(id), la = Math.max(f, p); if (la <= 0.02) return;
+    const [x, y] = S(v, r*Math.cos(deg*DEG), r*Math.sin(deg*DEG)); if (off(x, y, 0)) return;
+    lab({text, sub, x, y, r:0, pri:p > 0 ? 98 : pri, style:'region', color:SP.region, alpha:aOf(id)*la});
+  };
+  if (annulusVisible(v, 2.1, 3.3)) add('belt', 'Asteroid belt', null, 3.5, 208, 44, inBand(v, 2.5, 12));
+  if (annulusVisible(v, 30, 50)) add('kuiper', 'Kuiper Belt', null, 52, 122, 45, inBand(v, 28, 420));
+  if (v.co < 1e5){ const r = Math.max(2600, Math.min(30000, 0.62*v.half/v.k)); add('oort', 'Oort Cloud', 'edges estimated', r, 62, 46, inBand(v, 2500, 4e5)); }
+}
+function drawScale(v){
+  const au = 110/v.k; let unit, per;
+  if (au*AU_KM < 1e7){ unit = 'km'; per = 1/AU_KM; } else if (au < 30000){ unit = 'AU'; per = 1; } else { unit = 'light-years'; per = LYR; }
+  const raw = au/per, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw/p, nice = (f >= 5 ? 5 : f >= 2 ? 2 : 1)*p, len = nice*per*v.k;
+  const x = 14, y = H - 16;
+  const valTxt = nice >= 1000 ? fmtInt(nice) : String(Number(nice.toPrecision(3)));
+  const txt = `${valTxt} ${unit === 'light-years' && nice === 1 ? 'light-year' : unit} · light takes ${fmtDurCompact(nice*per*LT)}`;
+  ctx.strokeStyle = 'rgba(232,237,244,0.6)'; ctx.lineWidth = 1.2; ctx.beginPath();
+  ctx.moveTo(x, y - 4); ctx.lineTo(x, y + 2); ctx.moveTo(x, y); ctx.lineTo(x + len, y); ctx.moveTo(x + len, y - 4); ctx.lineTo(x + len, y + 2); ctx.stroke();
+  ctx.font = F_SUB; ctx.textBaseline = 'bottom'; ctx.textAlign = 'left'; ctx.lineJoin = 'round';
+  ctx.lineWidth = 3; ctx.strokeStyle = SP.halo; ctx.strokeText(txt, x, y - 6); ctx.fillStyle = 'rgba(232,237,244,0.75)'; ctx.fillText(txt, x, y - 6);
+  scaleBox = {x:x - 4, y:y - 22, w:Math.max(ctx.measureText(txt).width, len) + 10, h:28};
+}
+function drawLeader(){
+  if (!anchorPt) return;
+  for (const l of LAYERS){
+    if (l.h <= 0) continue;
+    const fr = l.fr; let t = null;
+    for (const id of [fr.anchor || fr.hi[0]].concat(fr.hi)) if (hiPts[id]){ t = hiPts[id]; break; }
+    if (!t) continue;
+    const dx = t.x - anchorPt.x, dy = t.y - anchorPt.y, d = Math.hypot(dx, dy); if (d < t.r + 16) continue;
+    const ex = t.x - dx/d*(t.r + 2), ey = t.y - dy/d*(t.r + 2);
+    ctx.save(); ctx.strokeStyle = l.col; ctx.fillStyle = l.col; ctx.globalAlpha = 0.75*l.h; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(anchorPt.x, anchorPt.y); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.beginPath(); ctx.arc(anchorPt.x, anchorPt.y, 3.5, 0, TAU); ctx.fill(); ctx.restore();
+  }
+}
+// Place labels by priority; a label that would touch another label or a marker is dropped
+// Labels ease toward their target opacity over about a fifth of a second: they fade in when they find room and fade out
+// when they lose it (a collision, the end of their zoom range, a frame change), however fast the camera moves.
+// Each label first tries the spot it will have when the camera arrives, then the spot it had; if it must move, it slides.
+const labelVis = new Map(); let lastLabelT = 0;
+function placeLabels(){
+  const now = state.now || performance.now(), dt = DRY ? 0 : Math.min(100, Math.max(0, now - lastLabelT));
+  if (!DRY) lastLabelT = now;
+  const step = reduced ? 1 : dt/220, slide = reduced ? 1 : 1 - Math.exp(-dt/85);
+  labels.sort((a, b) => b.pri - a.pri);
+  const boxes = scaleBox ? [scaleBox] : [];
+  for (const h of marks){ const m = Math.min(6, h.r + 1); boxes.push({x:h.x - m, y:h.y - m, w:2*m, h:2*m}); }
+  ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.lineJoin = 'round';
+  const seen = new Set(); let pending = false;
+  for (const L of labels){
+    const alpha = L.alpha == null ? 1 : L.alpha, st = L.style || 'real', key = st + '|' + L.text;
+    if (seen.has(key)) continue;
+    const prev = DRY ? null : labelVis.get(key);
+    if (alpha <= 0.02 && !prev) continue;
+    seen.add(key);
+    const f = FONT[st], txt = st === 'region' ? L.text.toUpperCase() : L.text;
+    ctx.font = f; const w1 = ctx.measureText(txt).width;
+    let ws = 0, wt = 0; const tagTxt = L.tag ? (L.sub ? ' · ' : '') + L.tag : '';
+    if (L.sub){ ctx.font = F_SUB; ws = ctx.measureText(L.sub).width; }
+    if (tagTxt){ ctx.font = F_TAG; wt = ctx.measureText(tagTxt).width; }
+    const two = !!(L.sub || L.tag), w = Math.max(w1, ws + wt), h = two ? 30 : (st === 'real' || st === 'fic' ? 16 : 13);
+    let cands;
+    if (st === 'ring') cands = [{x:L.x + 5, y:L.y - h - 2}, {x:L.x - w - 5, y:L.y - h - 2}, {x:L.x + 5, y:L.y + 3}, {x:L.x - w - 5, y:L.y + 3}];
+    else if (st === 'route') cands = [{x:L.x - w/2, y:L.y - h - 7}, {x:L.x - w/2, y:L.y + 7}, {x:L.x + 9, y:L.y - h/2}, {x:L.x - w - 9, y:L.y - h/2}];
+    else { const ring = rings.find(o => Math.abs(o.x - L.x) < 1 && Math.abs(o.y - L.y) < 1), g = Math.max(L.r + 7, ring ? ring.r + 3 : 0), dy = two ? 8 : h/2; cands = [{x:L.x + g, y:L.y - dy}, {x:L.x - g - w, y:L.y - dy}, {x:L.x - w/2, y:L.y - g - h}, {x:L.x - w/2, y:L.y + g}, {x:L.x + g - 4, y:L.y - g - h + 4}, {x:L.x + g - 4, y:L.y + g - 4}, {x:L.x - g - w + 4, y:L.y - g - h + 4}, {x:L.x - g - w + 4, y:L.y + g - 4}]; }
+    cands.forEach((c, i) => c.i = i);
+    // During a flight a label only uses its arrival spot (or, if it is leaving, the spot it has): when that spot is taken
+    // it waits or fades rather than hopping somewhere else. At rest any free spot will do, arrival spot first.
+    let order = cands;
+    if (!DRY){
+      const di = destPlace.get(key), pi = prev && prev.disp > 0.02 ? prev.ci : null;
+      if (state.anim && di != null) order = [cands[di]];
+      else if (state.anim && pi != null) order = [cands[pi]];
+      else { const pref = [di, pi].filter(i => i != null && i < cands.length); order = [...new Set(pref)].map(i => cands[i]).concat(cands.filter(c => !pref.includes(c.i))); }
+    }
+    let placed = null, box = null;
+    if (alpha > 0.02) for (const c of order){
+      c.x = Math.max(5, Math.min(c.x, W - w - 8));
+      const b = {x:c.x - 3, y:c.y - 2, w:w + 6, h:h + 3};
+      if (b.x < 2 || b.y < 2 || b.x + b.w > W - 2 || b.y + b.h > H - 2) continue;
+      if (boxes.some(o => b.x < o.x + o.w && b.x + b.w > o.x && b.y < o.y + o.h && b.y + b.h > o.y)) continue;
+      boxes.push(b); placed = c; box = b; break;
+    }
+    if (DRY){ if (placed) destPlace.set(key, placed.i); continue; }
+    const target = placed ? alpha : 0, d0 = prev ? prev.disp : 0;
+    const disp = target > d0 ? Math.min(target, d0 + step) : Math.max(target, d0 - step);
+    if (disp <= 0.005){ labelVis.delete(key); continue; }
+    if (Math.abs(disp - target) > 0.005) pending = true;
+    let dx, dy;
+    if (placed){
+      const tx = placed.x - L.x, ty = placed.y - L.y;
+      if (prev && prev.disp > 0.05){ dx = prev.dx + (tx - prev.dx)*slide; dy = prev.dy + (ty - prev.dy)*slide; if (Math.abs(tx - dx) + Math.abs(ty - dy) > 0.6) pending = true; else { dx = tx; dy = ty; } }
+      else { dx = tx; dy = ty; }
+    } else { dx = prev.dx; dy = prev.dy; }
+    labelVis.set(key, {disp, dx, dy, ci:placed ? placed.i : prev.ci, L, f, txt, tagTxt});
+    ctx.save(); ctx.globalAlpha = disp; drawLabel(L, L.x + dx, L.y + dy, f, txt, tagTxt); ctx.restore();
+  }
+  if (DRY) return;
+  // labels whose object is no longer drawn finish fading where they last were
+  for (const [key, e] of labelVis){
+    if (seen.has(key)) continue;
+    const disp = e.disp - step;
+    if (disp <= 0.005){ labelVis.delete(key); continue; }
+    e.disp = disp; pending = true;
+    ctx.save(); ctx.globalAlpha = disp; drawLabel(e.L, e.L.x + e.dx, e.L.y + e.dy, e.f, e.txt, e.tagTxt); ctx.restore();
+  }
+  if (pending) requestDraw();
+}
+function drawLabel(L, x, y, f, txt, tagTxt){
+  ctx.font = f; ctx.lineWidth = 3.5; ctx.strokeStyle = SP.halo; ctx.strokeText(txt, x, y); ctx.fillStyle = L.color || SP.ink; ctx.fillText(txt, x, y);
+  if (L.sub || tagTxt){
+    let sx = x; const yy = y + 15.5;
+    if (L.sub){ ctx.font = F_SUB; ctx.strokeText(L.sub, sx, yy); ctx.fillStyle = L.subColor || SP.muted; ctx.fillText(L.sub, sx, yy); sx += ctx.measureText(L.sub).width; }
+    if (tagTxt){ ctx.font = F_TAG; ctx.strokeText(tagTxt, sx, yy); ctx.fillStyle = L.tagColor || SP.teal; ctx.fillText(tagTxt, sx, yy); }
+  }
+}
+
+/* ---------- loop ---------- */
+function requestDraw(){ if (!rafId) rafId = requestAnimationFrame(frame); }
+function frame(now){
+  rafId = 0; state.now = now; let more = false;
+  if (state.anim){
+    const a = state.anim, p = Math.max(0, Math.min(1, (now - a.t0)/a.dur)), e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3)/2;
+    a.pr = p; const [x, y, R] = a.zi.at(e); state.cur = {x, y, R};
+    if (p >= 1){ state.anim = null; state.cur = null; state.rev = 1; }
+    more = true;
+  }
+  if (state.fading.length){ state.fading = state.fading.filter(f => now - f.t0 < FO); if (state.fading.length) more = true; }
+  draw();
+  if (more) requestDraw();
+}
+
+new ResizeObserver(() => resize()).observe(canvas);
+const startAt = Math.max(0, FRAMES.findIndex(f => '#' + f.id === location.hash));
+state.i = startAt; resize(); renderCard(FRAMES[startAt]); state.rev = 1;
+setInterval(() => { const fr = FRAMES[state.i]; if (fr.live) cF.textContent = liveFact(fr); }, 1000);
+setInterval(() => { world = augment(computeWorld(Date.now())); requestDraw(); }, 60000);
+// The canvas only uses a web font once it has loaded: ask for the three faces it draws with, then redraw
+if (document.fonts && document.fonts.load){
+  Promise.all([FONT.real, FONT.fic, F_SUB].map(f => document.fonts.load(f).catch(() => null))).then(() => { measureAnchor(); planArrival(); requestDraw(); });
+  document.fonts.ready.then(() => { measureAnchor(); requestDraw(); });
+}
+requestDraw();
+})();
+
+</script>
