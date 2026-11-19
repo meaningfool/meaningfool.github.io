@@ -5,9 +5,11 @@ import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import halftonePainter from '../../assets/apps/halftone-painter.jpg';
 import halftonePatternStudio from '../../assets/apps/halftone-pattern-studio.jpg';
+import oneLightDay from '../../assets/apps/one-light-day.jpg';
 
 const title = 'Apps | meaningfool';
-const description = 'Small tools by Josselin Perrus that run in your browser: a painter and a pattern studio for halftone dots.';
+const description =
+	'Small tools by Josselin Perrus that run in your browser: a painter and a pattern studio for halftone dots, and a map from the Moon to Betelgeuse.';
 
 const apps = [
 	{
@@ -21,6 +23,12 @@ const apps = [
 		name: 'Halftone Pattern Studio',
 		line: 'Generate halftone rings and bands, place them on a page and export them.',
 		screenshot: halftonePatternStudio,
+	},
+	{
+		href: '/apps/one-light-day/',
+		name: 'One Light-Day',
+		line: 'An interactive map from the Moon to Betelgeuse.',
+		screenshot: oneLightDay,
 	},
 ];
 ---
