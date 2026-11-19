@@ -13,9 +13,13 @@
   Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; media-src 'self'; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
 # Fingerprinted build files: their names change whenever their content does.
-# The 404 for a missing one gets no-store instead, from worker/index.js.
+# Browsers keep them for a day, not a year, because Cloudflare sends the same
+# header with the 404 for a missing file. In the seconds after a deploy, a new
+# page can ask for its new files from a server still on the previous version,
+# and the browser would keep that 404 as long as a real file. Without immutable,
+# reloading the page in Firefox or Safari checks them again.
 /_astro/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=86400
 
 # Cloudflare sends text files as plain text/plain, and browsers then decode the
 # emoji and accents in llms-full.txt as Windows-1252, so add the charset.

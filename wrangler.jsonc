@@ -1,6 +1,5 @@
-// Cloudflare Workers serves the static build in dist/. Worker code (worker/index.js)
-// runs only for the article videos in /images/, to answer byte-range requests, and
-// for the fingerprinted build files in /_astro/, so a missing one isn't cached.
+// Cloudflare Workers serves the static build in dist/. Worker code runs only for
+// the article videos in /images/, to answer byte-range requests (worker/index.js).
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
 	"name": "meaningfool",
@@ -9,7 +8,7 @@
 	"assets": {
 		"directory": "./dist",
 		"binding": "ASSETS",
-		"run_worker_first": ["/images/*", "/_astro/*"],
+		"run_worker_first": ["/images/*"],
 		// Unknown URLs get dist/404.html with a 404 status.
 		"not_found_handling": "404-page",
 		// Pages live at /page/ (dist/page/index.html). The permanent /page -> /page/
