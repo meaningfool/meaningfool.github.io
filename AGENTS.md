@@ -16,7 +16,7 @@ Josselin Perrus's personal site: an Astro 7 static site served by Cloudflare Wor
 - `src/data/projects.ts`: the projects, with their screenshots in `src/assets/projects/`, and which articles belong to each, by article id.
 - `docs/document-sharing.md`: how the encrypted portfolio links on `/documents/` work and how to create them.
 - `wrangler.jsonc`: the Cloudflare Worker `meaningfool`, which serves `dist/` as static assets.
-- `worker/index.js`: the only Worker code. It answers byte-range requests for the videos in `/images/`, which Safari needs to play them.
+- `worker/index.js`: the only Worker code, run only for `/images/*` and `/_astro/*`. It answers byte-range requests for the videos in `/images/`, which Safari needs to play them, and sends `Cache-Control: no-store` on the 404 for a missing `/_astro/` file instead of the year of caching `public/_headers` gives those files.
 - `public/_headers`: headers Cloudflare adds to responses: security headers, a year of caching for the fingerprinted `/_astro/*` files, and a Content-Security-Policy in report-only mode. A new kind of outside resource, such as another video host's embed or a third-party script, must be added to that policy. The build also writes `dist/_redirects`, the permanent `/page` → `/page/` redirects, with `src/lib/trailing-slash-redirects.mjs`.
 
 ## Commands

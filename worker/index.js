@@ -1,11 +1,21 @@
-// Cloudflare serves static assets without byte ranges: a Range request gets the
-// whole file with status 200. Safari won't play a <video> unless the server
-// answers its Range requests with 206, so this Worker adds them. wrangler.jsonc
-// runs it only for /images/*, where the article videos are; Cloudflare serves
-// every other file directly.
+// wrangler.jsonc runs this Worker only for /images/* and /_astro/*; Cloudflare
+// serves every other file directly.
+//
+// /images/*: Cloudflare serves static assets without byte ranges: a Range request
+// gets the whole file with status 200. Safari won't play a <video> unless the
+// server answers its Range requests with 206, so this Worker adds them.
+//
+// /_astro/*: public/_headers caches these fingerprinted files for a year, and
+// Cloudflare adds that header to the 404 for a missing one too. Right after a
+// deploy, a page can ask for a new file from an edge that still serves the
+// previous version: that 404 mustn't stay in the browser's cache for a year.
 
 export default {
   async fetch(request, env) {
+    if (new URL(request.url).pathname.startsWith('/_astro/')) {
+      return uncacheNotFound(await env.ASSETS.fetch(request));
+    }
+
     const asset = await env.ASSETS.fetch(request.url, { method: request.method });
     if (asset.status !== 200) return asset;
     const range = request.headers.get('Range');
@@ -34,6 +44,14 @@ export default {
     return new Response(readable, { status: 206, headers });
   },
 };
+
+/** Replaces the Cache-Control of a 404 with no-store, and passes every other response on as is. */
+function uncacheNotFound(response) {
+  if (response.status !== 404) return response;
+  const headers = new Headers(response.headers);
+  headers.set('Cache-Control', 'no-store');
+  return new Response(response.body, { status: response.status, headers });
+}
 
 function acceptRanges(response) {
   const headers = new Headers(response.headers);
