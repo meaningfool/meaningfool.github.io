@@ -413,7 +413,7 @@ const FONT = {real:`400 14px ${SERIF}`, fic:`italic 400 14px ${SERIF}`, region:`
 const F_SUB = `400 10.5px ${MONO}`;
 const F_TAG = `italic 400 12.5px ${SERIF}`;
 
-let W = 1, H = 1, DPR = 1, rafId = 0, labels = [], marks = [], rings = [], hiPts = {}, scaleBox = null, anchorPt = null;
+let W = 1, H = 1, DPR = 1, rafId = 0, labels = [], marks = [], rings = [], scaleBox = null;
 let LAYERS = [], DIML = 0;
 const state = {i:0, anim:null, cur:null, rev:1, revT0:0, fading:[], now:0};
 
@@ -422,10 +422,10 @@ function resize(){
   const r = canvas.getBoundingClientRect();
   const nW = Math.max(1, Math.round(r.width)), nH = Math.max(1, Math.round(r.height));
   const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2.6e6/(nW*nH))));
-  if (nW === W && nH === H && Math.abs(dpr - DPR) < 0.01){ measureAnchor(); return; }
+  if (nW === W && nH === H && Math.abs(dpr - DPR) < 0.01) return;
   W = nW; H = nH; DPR = dpr;
   for (const c of [canvas, starsCv]){ c.width = Math.round(W*DPR); c.height = Math.round(H*DPR); }
-  paintStars(); measureAnchor(); fadeCheck(); labelVis.clear(); if (labels.length) planArrival(); requestDraw();
+  paintStars(); fadeCheck(); labelVis.clear(); if (labels.length) planArrival(); requestDraw();
 }
 function paintStars(){
   const s = sctx; s.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -438,14 +438,6 @@ function paintStars(){
     const sz = m > 0.97 ? 1.5 : m > 0.8 ? 1.05 : 0.7; s.fillRect(x, y, sz, sz);
   }
   s.globalAlpha = 1;
-}
-// Where the line from the card to its subject starts: the canvas edge next to the card title
-function measureAnchor(){
-  const cr = canvas.getBoundingClientRect(), tr = cH.getBoundingClientRect();
-  if (!cr.width || !tr.width){ anchorPt = null; return; }
-  const side = tr.right <= cr.left + 2;   // card beside the map (wide screens) or below it (narrow)
-  anchorPt = side ? {x:0, y:Math.max(16, Math.min(H - 16, tr.top + tr.height/2 - cr.top))}
-                  : {x:Math.max(16, Math.min(W - 16, tr.left + 30 - cr.left)), y:H};
 }
 
 /* ---------- camera ---------- */
@@ -541,7 +533,7 @@ function renderCard(fr){
   prevBtn.disabled = state.i === 0; nextBtn.disabled = state.i === n - 1;
   nextBtn.textContent = state.i === 0 ? 'Start →' : 'Next →';
   cardEl.classList.remove('in'); void cardEl.offsetWidth; cardEl.classList.add('in'); cardEl.scrollTop = 0;
-  requestAnimationFrame(() => { measureAnchor(); fadeCheck(); requestDraw(); });
+  requestAnimationFrame(() => { fadeCheck(); requestDraw(); });
 }
 
 // A soft fade at the bottom of the card while more text is below
@@ -598,25 +590,20 @@ function burst(x, y){
 // Remember a marker (labels keep clear of it); ring it if it is the frame's subject
 function mark(id, x, y, r){
   marks.push({x, y, r});
-  let ringed = false;
   for (const l of LAYERS){
-    if (!l.fr.ringSet.has(id)) continue;
-    ringed = true; if (l.h <= 0) continue;
+    if (l.h <= 0 || !l.fr.ringSet.has(id)) continue;
     rings.push({x, y, r:r + 12});
     ctx.save(); ctx.strokeStyle = l.col; ctx.globalAlpha = 0.28*l.h; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x, y, r + 9, 0, TAU); ctx.stroke();
     ctx.globalAlpha = l.h; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(x, y, r + 9, 0, TAU); ctx.stroke(); ctx.restore();
   }
-  hiPts[id] = {x, y, r:ringed ? r + 9 : r + 4};
 }
-function hiRegion(id, sx, sy, k, lo, hi, mid){
+function hiRegion(id, sx, sy, k, lo, hi){
   for (const l of LAYERS){
     if (l.h <= 0 || !l.fr.ringSet.has(id)) continue;
     ctx.save(); ctx.strokeStyle = l.col; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.85*l.h;
     for (const r of [lo, hi]){ ctx.beginPath(); ctx.arc(sx, sy, r*k, 0, TAU); ctx.stroke(); }
     ctx.restore();
   }
-  const a = anchorPt ? Math.atan2(anchorPt.y - sy, anchorPt.x - sx) : -2.4;
-  hiPts[id] = {x:sx + Math.cos(a)*mid*k, y:sy + Math.sin(a)*mid*k, r:0};
 }
 const lab = (o) => labels.push(o);
 
@@ -632,7 +619,7 @@ function draw(cam){
   DIML = 0; for (const l of LAYERS){ l.col = KCOL[l.fr.kind]; if (l.h > DIML) DIML = l.h; }
   KEEP = new Set(); if (!DRY && state.anim) for (const id of state.anim.from.hi) if (fr.hiSet.has(id)) KEEP.add(id);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
-  labels = []; marks = []; rings = []; hiPts = {}; scaleBox = null;
+  labels = []; marks = []; rings = []; scaleBox = null;
   const [sx, sy] = S(v, 0, 0);
   drawOort(v, sx, sy);
   drawLightRings(v);
@@ -648,7 +635,6 @@ function draw(cam){
   drawPopStars(v, sx, sy);
   drawRegionLabels(v);
   drawScale(v);
-  drawLeader();
   placeLabels();
 }
 
@@ -662,7 +648,7 @@ function drawOort(v, sx, sy){
   ctx.fillStyle = 'rgba(170,195,235,0.42)'; ctx.beginPath();
   for (let i = 0; i < OORT.length; i += 2){ const x = sx + OORT[i]*v.k, y = sy - OORT[i + 1]*v.k; if (x < 0 || y < 0 || x > W || y > H) continue; ctx.rect(x, y, 1.2, 1.2); }
   ctx.fill(); ctx.restore();
-  hiRegion('oort', sx, sy, v.k, 2000, 100000, 100000);
+  hiRegion('oort', sx, sy, v.k, 2000, 100000);
 }
 const LRINGS = [[1,'1 light-second'],[60,'1 light-minute'],[600,'10 light-minutes'],[3600,'1 light-hour'],[36000,'10 light-hours'],[86400,'1 light-day'],[604800,'1 light-week'],[2629800,'1 light-month'],[31557600,'1 light-year'],[315576000,'10 light-years'],[3155760000,'100 light-years']];
 function drawLightRings(v){
@@ -690,7 +676,7 @@ function drawDust(v, arr, lo, hi, id, sx, sy, sz){
   ctx.save(); ctx.globalAlpha = aOf(id)*ramp(hi*v.k, 12, 30); ctx.fillStyle = SP.dust; ctx.beginPath();
   for (let i = 0; i < arr.length; i += 2){ const x = sx + arr[i]*v.k, y = sy - arr[i + 1]*v.k; if (x < 0 || y < 0 || x > W || y > H) continue; ctx.rect(x, y, sz, sz); }
   ctx.fill(); ctx.restore();
-  hiRegion(id, sx, sy, v.k, lo, hi, (lo + hi)/2);
+  hiRegion(id, sx, sy, v.k, lo, hi);
 }
 function drawOrbits(v, sx, sy){
   for (const o of ORBITS){
@@ -726,8 +712,6 @@ function drawRadio(v, sx, sy){
     const lx = sx + r*Math.cos(a*DEG), ly = sy + r*Math.sin(a*DEG);
     if (lx > 30 && lx < W - 30 && ly > 30 && ly < H - 30){ pickDone('radio', a); lab({text:'First radio broadcast, 1920', sub:`≈${Math.floor(radioLY())} light-years out`, x:lx, y:ly, r:2, pri:90, color:'#BFE3FF', alpha:w}); break; }
   }
-  const an = anchorPt ? Math.atan2(anchorPt.y - sy, anchorPt.x - sx) : -2.4;
-  hiPts.radio = {x:sx + Math.cos(an)*r, y:sy + Math.sin(an)*r, r:0};
 }
 // Fiction appears only in its own frame, and fades in once the camera arrives
 function drawFiction(v, sx, sy){
@@ -930,20 +914,6 @@ function drawScale(v){
   ctx.lineWidth = 3; ctx.strokeStyle = SP.halo; ctx.strokeText(txt, x, y - 6); ctx.fillStyle = 'rgba(232,237,244,0.75)'; ctx.fillText(txt, x, y - 6);
   scaleBox = {x:x - 4, y:y - 22, w:Math.max(ctx.measureText(txt).width, len) + 10, h:28};
 }
-function drawLeader(){
-  if (!anchorPt) return;
-  for (const l of LAYERS){
-    if (l.h <= 0) continue;
-    const fr = l.fr; let t = null;
-    for (const id of [fr.anchor || fr.hi[0]].concat(fr.hi)) if (hiPts[id]){ t = hiPts[id]; break; }
-    if (!t) continue;
-    const dx = t.x - anchorPt.x, dy = t.y - anchorPt.y, d = Math.hypot(dx, dy); if (d < t.r + 16) continue;
-    const ex = t.x - dx/d*(t.r + 2), ey = t.y - dy/d*(t.r + 2);
-    ctx.save(); ctx.strokeStyle = l.col; ctx.fillStyle = l.col; ctx.globalAlpha = 0.75*l.h; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(anchorPt.x, anchorPt.y); ctx.lineTo(ex, ey); ctx.stroke();
-    ctx.beginPath(); ctx.arc(anchorPt.x, anchorPt.y, 3.5, 0, TAU); ctx.fill(); ctx.restore();
-  }
-}
 // Place labels by priority; a label that would touch another label or a marker is dropped
 // Labels ease toward their target opacity over about a fifth of a second: they fade in when they find room and fade out
 // when they lose it (a collision, the end of their zoom range, a frame change), however fast the camera moves.
@@ -1048,8 +1018,8 @@ setInterval(() => { const fr = FRAMES[state.i]; if (fr.live) cF.textContent = li
 setInterval(() => { world = augment(computeWorld(Date.now())); requestDraw(); }, 60000);
 // The canvas only uses a web font once it has loaded: ask for the three faces it draws with, then redraw
 if (document.fonts && document.fonts.load){
-  Promise.all([FONT.real, FONT.fic, F_SUB].map(f => document.fonts.load(f).catch(() => null))).then(() => { measureAnchor(); planArrival(); requestDraw(); });
-  document.fonts.ready.then(() => { measureAnchor(); requestDraw(); });
+  Promise.all([FONT.real, FONT.fic, F_SUB].map(f => document.fonts.load(f).catch(() => null))).then(() => { planArrival(); requestDraw(); });
+  document.fonts.ready.then(() => requestDraw());
 }
 requestDraw();
 })();
